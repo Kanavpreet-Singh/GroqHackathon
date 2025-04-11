@@ -1,3 +1,3 @@
 # GroqHackathon
 Lessgo
-Team name- CodeBuddies
+Team name- HackCity Boys
