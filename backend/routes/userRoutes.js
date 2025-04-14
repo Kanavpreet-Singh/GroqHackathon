@@ -18,10 +18,16 @@ router.post('/signup',async (req,res)=>{
     })
 
     const data=reqBody.safeParse(req.body)
-    if(!data.success){
-        return res.json({
-            message:data.error
-        })
+    if (!data.success) {
+        
+        const formattedErrors = data.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+        }));
+        return res.status(400).json({
+            success: false,
+            errors: formattedErrors
+        });
     }
 
     let user=await User.findOne({email:email})

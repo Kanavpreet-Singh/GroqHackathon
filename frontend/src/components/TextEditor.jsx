@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { FileText, Sparkles, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeText } from "@/utils/api";
-
+import axios from "axios"
 const TextEditor = ({ text, setText }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState("");
   const { toast } = useToast();
-  
+
   // Use useEffect to apply white color to the heading
   useEffect(() => {
     const heading = document.querySelector('.text-analyzer-heading');
@@ -17,7 +17,6 @@ const TextEditor = ({ text, setText }) => {
       heading.style.color = '#FFFFFF';
     }
   }, []);
-
   const handleAnalyze = async () => {
     if (!text.trim()) {
       toast({
@@ -29,22 +28,48 @@ const TextEditor = ({ text, setText }) => {
     }
 
     setIsAnalyzing(true);
-    
+
     try {
-      const data = await analyzeText(text);
-      setSummary(data.summary);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.post(
+        "http://localhost:5000/news/text",
+        {
+          inputType: "text",
+          originalText: text,
+          transcription: text,
+          status: "completed",
+        },
+        {
+          headers: {
+            token: token,
+          },
+        }
+      );
+
+      const summaryText = response.data?.data?.summary;
+
+      if (summaryText) {
+        setSummary(summaryText);
+        toast({
+          title: "Analysis complete",
+          description: "The text was successfully summarized",
+        });
+      } else {
+        throw new Error("No summary returned from server");
+      }
+
     } catch (error) {
-      console.error('Error analyzing text:', error);
+      console.error("Error analyzing text:", error);
       toast({
         title: "Analysis failed",
-        description: "There was a problem connecting to the backend service",
+        description: error.response?.data?.message || "Failed to summarize text",
         variant: "destructive",
       });
     } finally {
       setIsAnalyzing(false);
     }
   };
-
   const handleCopy = () => {
     if (summary) {
       navigator.clipboard.writeText(summary);
@@ -76,7 +101,7 @@ const TextEditor = ({ text, setText }) => {
             />
           </div>
           <div className="flex justify-end">
-            <Button 
+            <Button
               onClick={handleAnalyze}
               className="bg-primary hover:bg-primary/80 flex items-center gap-2"
               disabled={isAnalyzing}
@@ -98,7 +123,7 @@ const TextEditor = ({ text, setText }) => {
       </div>
 
       {summary && (
-        <div className="animate-fade-in">
+        <div className="">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
               <Sparkles className="h-5 w-5 text-primary" />
@@ -109,13 +134,18 @@ const TextEditor = ({ text, setText }) => {
               <span>Copy</span>
             </Button>
           </div>
-          <div className="content-card bg-muted p-6 rounded-xl shadow-md border border-border">
-            <div className="prose max-w-none">
-              <p className="text-foreground">{summary}</p>
-            </div>
+
+          <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
+            <div
+              className="prose prose-slate max-w-none"
+              dangerouslySetInnerHTML={{ __html: summary }}
+            />
           </div>
         </div>
       )}
+
+
+
     </div>
   );
 };

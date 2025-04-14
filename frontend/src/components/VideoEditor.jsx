@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { Video, Sparkles, Copy, ExternalLink, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeVideo } from "@/utils/api";
-
+import axios from "axios"
 const VideoEditor = ({ videoUrl, setVideoUrl }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState("");
   const { toast } = useToast();
-  
+
   // Use useEffect to apply white color to the heading
   useEffect(() => {
     const heading = document.querySelector('.video-analyzer-heading');
@@ -29,15 +29,41 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
     }
 
     setIsAnalyzing(true);
-    
+
     try {
-      const data = await analyzeVideo(videoUrl);
-      setSummary(data.summary);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.post(
+        "http://localhost:5000/news/video",
+        {
+          inputType: "video",
+          videoUrl: videoUrl,
+          status: "completed",
+        },
+        {
+          headers: {
+            token: token,
+          },
+        }
+      );
+
+      const summaryText = response.data?.data?.summary;
+
+      if (summaryText) {
+        setSummary(summaryText);
+        toast({
+          title: "Analysis complete",
+          description: "The video was successfully analyzed",
+        });
+      } else {
+        throw new Error("No summary returned from server");
+      }
+
     } catch (error) {
-      console.error('Error analyzing video:', error);
+      console.error("Error analyzing video:", error);
       toast({
         title: "Analysis failed",
-        description: "There was a problem connecting to the backend service",
+        description: error.response?.data?.message || "Failed to analyze video",
         variant: "destructive",
       });
     } finally {
@@ -85,7 +111,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
                 onChange={(e) => setVideoUrl(e.target.value)}
                 className="flex-1"
               />
-              <Button 
+              <Button
                 onClick={handleAnalyze}
                 className="bg-news-primary hover:bg-news-dark whitespace-nowrap flex items-center gap-2"
                 disabled={isAnalyzing}
@@ -114,9 +140,9 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
                   <p className="text-xs mt-1 opacity-50 max-w-sm truncate">{videoUrl}</p>
                 </div>
                 <div className="absolute bottom-4 right-4">
-                  <a 
-                    href={videoUrl} 
-                    target="_blank" 
+                  <a
+                    href={videoUrl}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="bg-white/20 backdrop-blur-sm text-white text-xs rounded-full px-3 py-1 inline-flex items-center gap-1 hover:bg-white/30 transition-colors"
                   >
@@ -134,21 +160,24 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
         <div className="animate-fade-in">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-news-primary" />
-              <h2 className="text-xl font-semibold text-gray-800">Generated Summary</h2>
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold text-foreground">Generated Summary</h2>
             </div>
             <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center gap-1">
               <Copy className="h-4 w-4" />
               <span>Copy</span>
             </Button>
           </div>
-          <div className="content-card bg-news-light">
-            <div className="prose max-w-none">
-              <p className="text-gray-800">{summary}</p>
-            </div>
+
+          <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
+            <div
+              className="prose prose-slate max-w-none"
+              dangerouslySetInnerHTML={{ __html: summary }}
+            />
           </div>
         </div>
       )}
+
     </div>
   );
 };

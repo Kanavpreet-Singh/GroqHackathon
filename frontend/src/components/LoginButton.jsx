@@ -1,26 +1,29 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const LoginButton = () => {
-  // Get user from localStorage (we'll store it there after login)
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
+  const { toast } = useToast();
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem("token") !== null;
   });
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    toast({
+      title: "Logged out successfully",
+      description: "You have been logged out",
+      variant: "default",
+    });
   };
 
   return (
     <div>
-      {user ? (
+      {isLoggedIn ? (
         <div className="flex items-center gap-2">
-          <span className="text-sm hidden md:inline text-black">{user.name}</span>
           <Button 
             onClick={handleLogout} 
             variant="outline" 
