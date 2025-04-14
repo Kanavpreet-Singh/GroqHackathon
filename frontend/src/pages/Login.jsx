@@ -66,7 +66,7 @@ const Login = () => {
         firstname: values.name,
         email: values.email,
         password: values.password,
-        age: values.age
+        age:Number(values.age)
       });
   
       if (response.data.message === "you are signed up") {
@@ -143,7 +143,8 @@ const Login = () => {
                     <FormLabel>Age</FormLabel>
                     <FormControl>
                       <Input
-                        type="age"
+                        type="number"
+
                         placeholder="Enter your age: "
                         required
                         {...field}

@@ -32,7 +32,15 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
 
     try {
       const token = localStorage.getItem("token");
+      if(!token){
 
+        toast({
+          title: "Login first",
+          description: "Please ",
+          variant: "destructive",
+        });
+
+      }
       const response = await axios.post(
         "http://localhost:5000/news/video",
         {
