@@ -7,7 +7,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
-
+from youtube_transcript_api import YouTubeTranscriptApi
+import validators
 
 class Summary(BaseModel):
     summary: str = Field(description="The generated summary")
@@ -94,6 +95,48 @@ def summarize():
             return jsonify({"error": "Missing 'originalText' field"}), 400
 
         summarized_text = summarize_video_pipeline(original_text)
+        return jsonify({
+            "summarizedText": summarized_text,
+            "status": "success"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
+    
+def extract_video_id(url):
+    if "youtube.com/watch?v=" in url:
+        return url.split("v=")[1].split("&")[0]
+    elif "youtu.be/" in url:
+        return url.split("youtu.be/")[1].split("?")[0]
+    else:
+        return None
+    
+@app.route('/summarize-video', methods=['POST'])
+def summarize_video():
+    try:
+        data = request.get_json()
+        if not data or 'videoUrl' not in data:
+            return jsonify({"error": "Missing 'videoUrl' field"}), 400
+
+        url = data['videoUrl']
+        if not validators.url(url):
+            return jsonify({"error": "Invalid URL"}), 400
+
+        video_id = extract_video_id(url)
+        if not video_id:
+            return jsonify({"error": "Could not extract video ID"}), 400
+
+        try:
+            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+            transcript_text = " ".join([t['text'] for t in transcript_list])
+        
+        except Exception as e:
+            return jsonify({"error": f"Transcript fetch failed: {str(e)}"}), 500
+
+        summarized_text = summarize_video_pipeline(transcript_text)
         return jsonify({
             "summarizedText": summarized_text,
             "status": "success"
