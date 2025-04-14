@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
@@ -10,8 +11,8 @@ const ThemeToggle = () => {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className={`w-10 h-10 rounded-full border shadow-md transition-colors duration-300 ${
-        isDark ? "bg-yellow-200 border-yellow-500" : "bg-gray-900 border-gray-700"
+      className={`w-10 h-10 rounded-full border shadow-md transition-colors duration-300 hover-glow ${
+        isDark ? "bg-green-200 border-green-500" : "bg-gray-900 border-gray-700"
       }`}
       title={isDark ? "Currently: Dark Mode" : "Currently: Light Mode"}
     >
