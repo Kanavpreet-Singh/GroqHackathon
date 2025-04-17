@@ -76,13 +76,13 @@ const AudioEditor = ({ audioUrl, setAudioUrl }) => {
     }
   };
 
-  const formatTime = (percentage) => {
-    const totalSeconds = 90; // Assuming 1:30 total length
-    const currentSeconds = Math.floor((percentage / 100) * totalSeconds);
-    const minutes = Math.floor(currentSeconds / 60);
-    const seconds = currentSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  // const formatTime = (percentage) => {
+  //   const totalSeconds = 90; // Assuming 1:30 total length
+  //   const currentSeconds = Math.floor((percentage / 100) * totalSeconds);
+  //   const minutes = Math.floor(currentSeconds / 60);
+  //   const seconds = currentSeconds % 60;
+  //   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  // };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
