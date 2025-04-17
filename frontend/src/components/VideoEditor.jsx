@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Video, Sparkles, Copy, ExternalLink, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeVideo } from "@/utils/api";
-import axios from "axios"
+import axios from "axios";
 const VideoEditor = ({ videoUrl, setVideoUrl }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState("");
@@ -12,9 +12,9 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
 
   // Use useEffect to apply white color to the heading
   useEffect(() => {
-    const heading = document.querySelector('.video-analyzer-heading');
+    const heading = document.querySelector(".video-analyzer-heading");
     if (heading) {
-      heading.style.color = '#FFFFFF';
+      heading.style.color = "#FFFFFF";
     }
   }, []);
 
@@ -32,14 +32,12 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
 
     try {
       const token = localStorage.getItem("token");
-      if(!token){
-
+      if (!token) {
         toast({
           title: "Login first",
           description: "Please ",
           variant: "destructive",
         });
-
       }
       const response = await axios.post(
         "http://localhost:5000/news/video",
@@ -66,7 +64,6 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
       } else {
         throw new Error("No summary returned from server");
       }
-
     } catch (error) {
       console.error("Error analyzing video:", error);
       toast({
@@ -103,11 +100,16 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
       <div className="mb-6">
         <div className="flex items-center space-x-2 mb-4">
           <Video className="h-5 w-5 text-news-primary" />
-          <h2 className="text-xl font-semibold video-analyzer-heading">Video Analyzer</h2>
+          <h2 className="text-xl font-semibold video-analyzer-heading">
+            Video Analyzer
+          </h2>
         </div>
         <div className="content-card">
           <div className="mb-4">
-            <label htmlFor="videoUrl" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="videoUrl"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Enter video URL
             </label>
             <div className="flex space-x-2">
@@ -139,18 +141,23 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
             </div>
           </div>
 
+          {/* {videoUrl && isValidUrl(videoUrl) && (
+            <div className="mt-6 border rounded-lg overflow-hidden bg-gray-100">
+              ...
+            </div>
+          )} */}
           {videoUrl && isValidUrl(videoUrl) && (
             <div className="mt-6 border rounded-lg overflow-hidden bg-gray-100">
               <div className="aspect-video relative flex items-center justify-center bg-gray-900">
-                <div className="text-white text-center">
+                {/* <div className="text-white text-center">
                   <Play className="h-16 w-16 mx-auto mb-2 opacity-70" />
                   <p className="text-sm opacity-80">Video Player</p>
                   <p className="text-xs mt-1 opacity-50 max-w-sm truncate">{videoUrl}</p>
-                </div>
+                </div> */}
                 <div className="absolute bottom-4 right-4">
-                  <a
-                    href={videoUrl}
-                    target="_blank"
+                  <a 
+                    href={videoUrl} 
+                    target="_blank" 
                     rel="noopener noreferrer"
                     className="bg-white/20 backdrop-blur-sm text-white text-xs rounded-full px-3 py-1 inline-flex items-center gap-1 hover:bg-white/30 transition-colors"
                   >
@@ -169,9 +176,16 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold text-foreground">Generated Summary</h2>
+              <h2 className="text-xl font-semibold text-foreground">
+                Generated Summary
+              </h2>
             </div>
-            <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopy}
+              className="flex items-center gap-1"
+            >
               <Copy className="h-4 w-4" />
               <span>Copy</span>
             </Button>
@@ -185,7 +199,6 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

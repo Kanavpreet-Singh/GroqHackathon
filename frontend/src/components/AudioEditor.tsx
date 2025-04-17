@@ -114,7 +114,7 @@ const AudioEditor = ({ audioUrl, setAudioUrl }: AudioEditorProps) => {
             </div>
           </div>
 
-          {audioUrl && (
+          {/* {audioUrl && (
             <div className="mt-6 bg-gray-50 rounded-lg p-4 border">
               <div className="flex items-center space-x-4">
                 <Button 
@@ -144,7 +144,7 @@ const AudioEditor = ({ audioUrl, setAudioUrl }: AudioEditorProps) => {
               </div>
               <p className="text-xs text-gray-500 mt-2 truncate">{audioUrl}</p>
             </div>
-          )}
+          )} */}
         </div>
       </div>
 

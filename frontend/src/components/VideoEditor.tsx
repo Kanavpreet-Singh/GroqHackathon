@@ -97,11 +97,11 @@ const VideoEditor = ({ videoUrl, setVideoUrl }: VideoEditorProps) => {
           {videoUrl && isValidUrl(videoUrl) && (
             <div className="mt-6 border rounded-lg overflow-hidden bg-gray-100">
               <div className="aspect-video relative flex items-center justify-center bg-gray-900">
-                <div className="text-white text-center">
+                {/* <div className="text-white text-center">
                   <Play className="h-16 w-16 mx-auto mb-2 opacity-70" />
                   <p className="text-sm opacity-80">Video Player</p>
                   <p className="text-xs mt-1 opacity-50 max-w-sm truncate">{videoUrl}</p>
-                </div>
+                </div> */}
                 <div className="absolute bottom-4 right-4">
                   <a 
                     href={videoUrl} 
