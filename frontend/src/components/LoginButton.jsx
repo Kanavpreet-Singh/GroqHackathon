@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import { User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-
+import { useNavigate } from "react-router-dom";
+import axios from "axios"
 const LoginButton = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return localStorage.getItem("token") !== null;
   });
@@ -18,7 +20,9 @@ const LoginButton = () => {
       description: "You have been logged out",
       variant: "default",
     });
+    navigate("/");
   };
+  
 
   return (
     <div>
@@ -33,6 +37,17 @@ const LoginButton = () => {
             <LogOut className="h-4 w-4" />
             <span className="hidden md:inline">Logout</span>
           </Button>
+          <Link to="/history">
+  <Button 
+    variant="outline" 
+    className="flex items-center gap-1 text-black"
+    title="View your history"
+  >
+    Get history
+    <span className="hidden md:inline">Get History</span>
+  </Button>
+</Link>
+
         </div>
       ) : (
         <Link to="/login">
@@ -45,6 +60,7 @@ const LoginButton = () => {
             <span className="hidden md:inline">Login</span>
           </Button>
         </Link>
+        
       )}
     </div>
   );

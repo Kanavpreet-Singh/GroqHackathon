@@ -81,13 +81,13 @@ router.get('/history', userAuth, async (req, res) => {
       const userNews = await News.find({ userId }).sort({ createdAt: -1 });
   
       if (userNews.length === 0) {
-        return res.json({ message: 'No history found' });
+        return res.json([]);
       }
   
       res.json(userNews);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: 'Something went wrong fetching history' });
+      res.status(500).json([]);
     }
   });
   
