@@ -14,12 +14,12 @@ const AudioEditor = ({ audioUrl, setAudioUrl }) => {
   const { toast } = useToast();
   
   // Use useEffect to apply white color to the heading
-  useEffect(() => {
-    const heading = document.querySelector('.audio-analyzer-heading');
-    if (heading) {
-      heading.style.color = '#FFFFFF';
-    }
-  }, []);
+  // useEffect(() => {
+  //   const heading = document.querySelector('.audio-analyzer-heading');
+  //   if (heading) {
+  //     heading.style.color = '#FFFFFF';
+  //   }
+  // }, []);
 
   const handleAnalyze = async () => {
     if (!audioUrl.trim()) {
@@ -89,11 +89,11 @@ const AudioEditor = ({ audioUrl, setAudioUrl }) => {
       <div className="mb-6">
         <div className="flex items-center space-x-2 mb-4">
           <Mic className="h-5 w-5 text-news-primary" />
-          <h2 className="text-xl font-semibold audio-analyzer-heading">Audio Analyzer</h2>
+          <h2 className="text-xl font-semibold text-foreground dark:text-white">Audio Analyzer</h2>
         </div>
         <div className="content-card">
           <div className="mb-4">
-            <label htmlFor="audioUrl" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="audioUrl" className="block text-sm font-medium text-foreground mb-1">
               Enter audio URL
             </label>
             <div className="flex space-x-2">

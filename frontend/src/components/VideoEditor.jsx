@@ -11,12 +11,12 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
   const { toast } = useToast();
 
   // Use useEffect to apply white color to the heading
-  useEffect(() => {
-    const heading = document.querySelector(".video-analyzer-heading");
-    if (heading) {
-      heading.style.color = "#FFFFFF";
-    }
-  }, []);
+  // useEffect(() => {
+  //   const heading = document.querySelector(".video-analyzer-heading");
+  //   if (heading) {
+  //     heading.style.color = "#FFFFFF";
+  //   }
+  // }, []);
 
   const handleAnalyze = async () => {
     if (!videoUrl.trim()) {
@@ -100,7 +100,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
       <div className="mb-6">
         <div className="flex items-center space-x-2 mb-4">
           <Video className="h-5 w-5 text-news-primary" />
-          <h2 className="text-xl font-semibold video-analyzer-heading">
+          <h2 className="text-xl font-semibold text-foreground dark:text-white">
             Video Analyzer
           </h2>
         </div>
@@ -108,7 +108,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
           <div className="mb-4">
             <label
               htmlFor="videoUrl"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Enter video URL
             </label>
@@ -146,14 +146,14 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
               ...
             </div>
           )} */}
-          {videoUrl && isValidUrl(videoUrl) && (
+          {/* {videoUrl && isValidUrl(videoUrl) && (
             <div className="mt-6 border rounded-lg overflow-hidden bg-gray-100">
               <div className="aspect-video relative flex items-center justify-center bg-gray-900">
-                {/* <div className="text-white text-center">
+                <div className="text-white text-center">
                   <Play className="h-16 w-16 mx-auto mb-2 opacity-70" />
                   <p className="text-sm opacity-80">Video Player</p>
                   <p className="text-xs mt-1 opacity-50 max-w-sm truncate">{videoUrl}</p>
-                </div> */}
+                </div>
                 <div className="absolute bottom-4 right-4">
                   <a 
                     href={videoUrl} 
@@ -167,7 +167,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
         </div>
       </div>
 
