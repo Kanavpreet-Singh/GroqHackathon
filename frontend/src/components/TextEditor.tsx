@@ -53,7 +53,7 @@ const TextEditor = ({ text, setText }: TextEditorProps) => {
       <div className="mb-6">
         <div className="flex items-center space-x-2 mb-4">
           <FileText className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold text-foreground">Text Analyzer</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Text Analyzer</h2>
         </div>
         <div className="content-card bg-card p-6 rounded-xl shadow-md border border-border">
           <div className="mb-4">

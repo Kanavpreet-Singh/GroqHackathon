@@ -65,13 +65,13 @@ const AudioEditor = ({ audioUrl, setAudioUrl }: AudioEditorProps) => {
     }
   };
 
-  const formatTime = (percentage: number) => {
-    const totalSeconds = 90; // Assuming 1:30 total length
-    const currentSeconds = Math.floor((percentage / 100) * totalSeconds);
-    const minutes = Math.floor(currentSeconds / 60);
-    const seconds = currentSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  // const formatTime = (percentage: number) => {
+  //   const totalSeconds = 90; // Assuming 1:30 total length
+  //   const currentSeconds = Math.floor((percentage / 100) * totalSeconds);
+  //   const minutes = Math.floor(currentSeconds / 60);
+  //   const seconds = currentSeconds % 60;
+  //   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  // };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -114,7 +114,7 @@ const AudioEditor = ({ audioUrl, setAudioUrl }: AudioEditorProps) => {
             </div>
           </div>
 
-          {audioUrl && (
+          {/* {audioUrl && (
             <div className="mt-6 bg-gray-50 rounded-lg p-4 border">
               <div className="flex items-center space-x-4">
                 <Button 
@@ -144,7 +144,7 @@ const AudioEditor = ({ audioUrl, setAudioUrl }: AudioEditorProps) => {
               </div>
               <p className="text-xs text-gray-500 mt-2 truncate">{audioUrl}</p>
             </div>
-          )}
+          )} */}
         </div>
       </div>
 

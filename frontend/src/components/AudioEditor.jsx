@@ -14,12 +14,12 @@ const AudioEditor = ({ audioUrl, setAudioUrl }) => {
   const { toast } = useToast();
   
   // Use useEffect to apply white color to the heading
-  useEffect(() => {
-    const heading = document.querySelector('.audio-analyzer-heading');
-    if (heading) {
-      heading.style.color = '#FFFFFF';
-    }
-  }, []);
+  // useEffect(() => {
+  //   const heading = document.querySelector('.audio-analyzer-heading');
+  //   if (heading) {
+  //     heading.style.color = '#FFFFFF';
+  //   }
+  // }, []);
 
   const handleAnalyze = async () => {
     if (!audioUrl.trim()) {
@@ -76,24 +76,24 @@ const AudioEditor = ({ audioUrl, setAudioUrl }) => {
     }
   };
 
-  const formatTime = (percentage) => {
-    const totalSeconds = 90; // Assuming 1:30 total length
-    const currentSeconds = Math.floor((percentage / 100) * totalSeconds);
-    const minutes = Math.floor(currentSeconds / 60);
-    const seconds = currentSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  // const formatTime = (percentage) => {
+  //   const totalSeconds = 90; // Assuming 1:30 total length
+  //   const currentSeconds = Math.floor((percentage / 100) * totalSeconds);
+  //   const minutes = Math.floor(currentSeconds / 60);
+  //   const seconds = currentSeconds % 60;
+  //   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  // };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="mb-6">
         <div className="flex items-center space-x-2 mb-4">
           <Mic className="h-5 w-5 text-news-primary" />
-          <h2 className="text-xl font-semibold audio-analyzer-heading">Audio Analyzer</h2>
+          <h2 className="text-xl font-semibold text-foreground dark:text-white">Audio Analyzer</h2>
         </div>
         <div className="content-card">
           <div className="mb-4">
-            <label htmlFor="audioUrl" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="audioUrl" className="block text-sm font-medium text-foreground mb-1">
               Enter audio URL
             </label>
             <div className="flex space-x-2">
@@ -125,7 +125,7 @@ const AudioEditor = ({ audioUrl, setAudioUrl }) => {
             </div>
           </div>
 
-          {audioUrl && (
+          {/* {audioUrl && (
             <div className="mt-6 bg-gray-50 rounded-lg p-4 border">
               <div className="flex items-center space-x-4">
                 <Button 
@@ -155,7 +155,7 @@ const AudioEditor = ({ audioUrl, setAudioUrl }) => {
               </div>
               <p className="text-xs text-gray-500 mt-2 truncate">{audioUrl}</p>
             </div>
-          )}
+          )} */}
         </div>
       </div>
 
