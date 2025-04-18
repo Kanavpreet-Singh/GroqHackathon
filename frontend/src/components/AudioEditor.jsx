@@ -102,6 +102,24 @@ const AudioEditor = () => {
       }, 100);
     }
   };
+  const MAX_FILE_SIZE_MB = 25;
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024; // Convert MB to bytes
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+  
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast({
+        title: "File too large",
+        description: `Please upload a file smaller than ${MAX_FILE_SIZE_MB}MB`,
+        variant: "destructive",
+      });
+      e.target.value = ""; // Clear the file input
+      setAudioFile(null);
+    } else {
+      setAudioFile(file);
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -119,7 +137,7 @@ const AudioEditor = () => {
               <Input
                 type="file"
                 accept="audio/*"
-                onChange={(e) => setAudioFile(e.target.files[0])}
+                onChange={handleFileChange}
                 className="flex-1"
               />
               <Button
