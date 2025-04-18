@@ -40,7 +40,7 @@ const AudioEditor = () => {
       const response = await axios.post(
         "http://localhost:5000/news/text",
         {
-          inputType: "text",
+          inputType: "audio",
           originalText: resp.data.transcription,
           transcription: resp.data.transcription,
           status: "completed",

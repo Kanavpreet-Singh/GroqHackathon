@@ -12,11 +12,11 @@ const FLASK_API_TIMEOUT = parseInt(process.env.FLASK_API_TIMEOUT) || 30000; // 3
 
 router.post("/text", userAuth, async (req, res) => {
     try {
-        const { transcription, inputType, videoUrl, originalText, status } = req.body;
+        let { transcription, inputType, videoUrl, originalText, status } = req.body;
         const userId = req.user.userid;
 
         // Input validation
-        if (!inputType || !['text', 'video'].includes(inputType)) {
+        if (!inputType || !['text', 'video','audio'].includes(inputType)) {
             return res.status(400).json({ 
                 success: false,
                 message: "Invalid input type. Must be either 'text' or 'video'" 
@@ -57,11 +57,14 @@ router.post("/text", userAuth, async (req, res) => {
         }
 
         // Save to database
+        if (inputType === 'audio') {
+          originalText = 'Audio File';
+      }
         const newsItem = new News({
             userId,
             inputType,
             videoUrl: inputType === 'video' ? videoUrl : null,
-            originalText: inputType === 'text' ? originalText : null,
+            originalText: inputType === 'text' || inputType === 'audio' ? originalText : null,
             transcription,
             summarizedText,
             status: status || 'completed',

@@ -8,7 +8,7 @@ const newsSchema = new mongoose.Schema({
   },
   inputType: {
     type: String,
-    enum: ['text', 'video'],
+    enum: ['text', 'video','audio'],
     required: true
   },
   videoUrl: {
