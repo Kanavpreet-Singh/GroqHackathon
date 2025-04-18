@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 import LoginButton from "./LoginButton";
-
+import { Link } from "react-router-dom";
 const Header = ({ selectedMedia, setSelectedMedia }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -12,6 +12,7 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center gap-2">
             <div className="bg-news-primary p-2">
               <img
                 src="/myLogo.png"
@@ -23,6 +24,7 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
             <h1 className="text-xl font-bold text-foreground hidden sm:block text-black">
               BriefLens
             </h1>
+            </Link>
             <h1 className="text-xl font-bold text-foreground sm:hidden">
               News AI
             </h1>
