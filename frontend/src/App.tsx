@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import History from "./pages/History";
+import LiveNews from "./pages/LiveNews";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -22,7 +23,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/history" element={<History />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/livenews" element={<LiveNews />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

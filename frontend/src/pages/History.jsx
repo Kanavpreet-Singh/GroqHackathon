@@ -24,24 +24,17 @@ const History = () => {
 
     fetchHistory();
   }, []);
-
-  // Process the HTML content to ensure proper text colors
   const processHtmlContent = (htmlContent) => {
-    // If using server-side rendering, return as is to avoid DOM errors
+
     if (typeof window === 'undefined') return htmlContent;
-    
-    // Create a DOMParser to work with the HTML string
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlContent, 'text/html');
-    
-    // Select all text elements
+
     const allElements = doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, span, div, ul, ol');
     allElements.forEach(el => {
-      // Remove any existing color styles
       el.style.color = '';
     });
-    
-    // Convert back to string
     return doc.body.innerHTML;
   };
 

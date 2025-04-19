@@ -29,7 +29,6 @@ const Header = ({ selectedMedia, setSelectedMedia }: HeaderProps) => {
           </div>
           
           <div className="hidden md:flex items-center space-x-1 border border-border rounded-xl px-3 py-2  backdrop-blur-sm shadow-sm">
-
             <Button
               variant={selectedMedia === 'text' ? 'default' : 'outline'}
               className={`flex items-center gap-2 hover-lift ${selectedMedia === 'text' ? 'green-gradient hover:shadow-md hover:shadow-primary/30' : ''}`}
