@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import History from "./pages/History";
 import LiveNews from "./pages/LiveNews";
+// import 'bootstrap/dist/css/bootstrap.min.css'
 const queryClient = new QueryClient();
 
 const App = () => (

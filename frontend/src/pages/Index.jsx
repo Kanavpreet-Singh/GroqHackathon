@@ -5,6 +5,8 @@ import TextEditor from "@/components/TextEditor";
 import VideoEditor from "@/components/VideoEditor";
 import AudioEditor from "@/components/AudioEditor";
 import { useTheme } from "@/context/ThemeContext";
+import { ColourfulText } from "@/components/ui/colourful-text";
+import Footer from "@/components/Footer";
 
 const Index = () => {
   const [selectedMedia, setSelectedMedia] = useState('text');
@@ -23,7 +25,8 @@ const Index = () => {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground text-center">
-            BriefLens
+          {/* <ColourfulText text="BriefLens" /> */}
+          BriefLens
           </h1>
           <p className="text-muted-foreground text-center mt-2 max-w-2xl mx-auto">
             Quickly analyze and summarize news content from text, video, or audio sources
@@ -46,13 +49,7 @@ const Index = () => {
         </div>
       </main>
       
-      <footer className="border-t border-border mt-auto">
-        <div className="container mx-auto px-4 py-6">
-          <p className="text-muted-foreground text-center text-sm">
-          © 2025 BreifLens • HackCity Boys
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
