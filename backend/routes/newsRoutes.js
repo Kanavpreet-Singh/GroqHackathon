@@ -335,4 +335,30 @@ router.post("/audio", userAuth, upload.single("audio"), async (req, res) => {
     });
   }
 });
+
+router.get('/livenews', userAuth, async (req, res) => {
+  try {
+    const response = await axios.get('https://gnews.io/api/v4/top-headlines', {
+      params: {
+        lang: 'en',        // Language: English
+        country: 'in',     // Country: India
+        token: process.env.GNEWS_API_KEY,
+        max: 10            
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      totalResults: response.data.totalArticles,
+      articles: response.data.articles
+    });
+  } catch (error) {
+    console.error('Error fetching news:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch live news'
+    });
+  }
+});
+
 module.exports = router;
