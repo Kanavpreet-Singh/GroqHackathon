@@ -177,7 +177,7 @@ const AudioEditor = () => {
 
           <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
             <div
-              className="prose prose-slate max-w-none"
+              className=" prose text-foreground dark:prose-invert max-w-none"
               dangerouslySetInnerHTML={{ __html: summary }}
             />
           </div>

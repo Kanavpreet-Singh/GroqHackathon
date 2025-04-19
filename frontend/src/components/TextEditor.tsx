@@ -103,7 +103,7 @@ const TextEditor = ({ text, setText }: TextEditorProps) => {
             </Button>
           </div>
           <div className="content-card bg-muted p-6 rounded-xl shadow-md border border-border">
-            <div className="prose max-w-none">
+            <div className=" max-w-none">
               <p className="text-foreground">{summary}</p>
             </div>
           </div>

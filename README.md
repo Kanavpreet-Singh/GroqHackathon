@@ -51,8 +51,8 @@ By building BriefLens, we aimed to simplify how people consume news—making it 
 ## 🛠️ Tech Stack
 
 ### Core Technologies Used:
-- Frontend: React
-- Backend: NodeJs
+- Frontend: React, TailwindCSS
+- Backend: NodeJs, Flask
 - Database: MongoDB
 - APIs: Groq, AssemblyAI
 - Hosting:
@@ -69,7 +69,7 @@ By building BriefLens, we aimed to simplify how people consume news—making it 
 - ✅ Summarize any English news video from YouTube — just paste the URL and get a concise summary instantly. 
 - ✅ Instantly and accurately summarize any audio news file.  
 - ✅ Effectively summarize long news articles to save time and reading effort.  
-- ✅ Enhanced UI with dark/light mode and easy access to previously viewed summaries. 
+- ✅ Enhanced UI with dark/light mode, website responsiveness and easy access to previously viewed summaries. 
 
 
 
@@ -118,19 +118,22 @@ Provide any backend/frontend split or environment setup notes here.
 
 ## 🧬 Future Scope
 
-List improvements, extensions, or follow-up features:
 
-- 📈 More integrations  
-- 🛡️ Security enhancements  
-- 🌐 Localization / broader accessibility  
+- Live, daily news feeds  
+- Personalized news subscriptions feature according to interest of the users.
+- Deployment and scalibility.
 
 ---
 
 ## 📎 Resources / Credits
 
-- APIs or datasets used  
-- Open source libraries or tools referenced  
-- Acknowledgements  
+- [JWT (JSON Web Token)](https://jwt.io/) – for implementing secure user authentication.
+- [Groq](https://groq.com/) – used for fast and efficient language model-based news summarization.
+- [AssemblyAI](https://www.assemblyai.com/) – for converting speech to text in audio news content.
+- [Flask](https://flask.palletsprojects.com/) – lightweight Python framework used to connect the Groq LLM model with the backend.
+- [Node.js](https://nodejs.org/) – backend environment handling API logic and server-side operations.
+- [React](https://reactjs.org/) – JavaScript library used for building the user interface.
+- [Tailwind CSS](https://tailwindcss.com/) – utility-first CSS framework for responsive frontend design.  
 
 ---
 
