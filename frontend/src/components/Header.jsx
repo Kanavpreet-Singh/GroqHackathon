@@ -21,7 +21,6 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
     <header className="relative z-10 bg-pink-100 border-b border-border shadow-sm">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo and Title */}
           <div className="flex items-center space-x-2">
             <Link to="/" className="flex items-center gap-2">
               <div className="bg-news-primary p-2">
@@ -45,7 +44,7 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
             <Link to="/livenews">
               <Button
                 variant="ghost"
-                className={`flex items-center gap-2 btn-animated ${
+                className={`flex items-center gap-2 ${
                   location.pathname === "/livenews"
                     ? "text-primary font-medium"
                     : ""
@@ -113,7 +112,7 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
         {mobileMenuOpen && (
           <div className="md:hidden mt-4 bg-card rounded-md shadow-lg border border-border animate-fade-in absolute right-4 left-4 z-50">
             <div className="py-2 space-y-1">
-              <Link to="/livenews">
+              <Link to="/livenews" className="block">
                 <button
                   className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
                     location.pathname === "/livenews"
