@@ -108,7 +108,33 @@ export default {
         'pulse-gentle': 'pulse-gentle 2s ease-in-out infinite',
         'slide-in': 'slide-in 0.3s ease-out',
         'fade-in': 'fade-in 0.4s ease-out'
-      }
+      },
+      typography: (theme) => ({
+        DEFAULT: {
+          css: {
+            color: theme('colors.foreground'),
+            h1: { color: theme('colors.foreground') },
+            h2: { color: theme('colors.foreground') },
+            h3: { color: theme('colors.foreground') },
+            h4: { color: theme('colors.foreground') },
+            strong: { color: theme('colors.foreground') },
+            a: { color: theme('colors.primary.DEFAULT') },
+            code: { color: theme('colors.foreground') },
+          },
+        },
+        invert: {
+          css: {
+            color: theme('colors.foreground'),
+            h1: { color: theme('colors.foreground') },
+            h2: { color: theme('colors.foreground') },
+            h3: { color: theme('colors.foreground') },
+            h4: { color: theme('colors.foreground') },
+            strong: { color: theme('colors.foreground') },
+            a: { color: theme('colors.primary.DEFAULT') },
+            code: { color: theme('colors.foreground') },
+          },
+        },
+      }),
     }
   },
   plugins: [require("tailwindcss-animate"),require('@tailwindcss/typography'),],
