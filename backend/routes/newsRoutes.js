@@ -343,7 +343,7 @@ router.get('/livenews', userAuth, async (req, res) => {
         lang: 'en',        // Language: English
         country: 'in',     // Country: India
         token: process.env.GNEWS_API_KEY,
-        max: 10            
+        max: 9           
       }
     });
 
