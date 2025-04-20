@@ -8,7 +8,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { ColourfulText } from "@/components/ui/colourful-text";
 import Footer from "@/components/Footer";
 import { GoogleTranslateWidget } from "../components/GoogleTranslateWidget";
-import { LanguageSelector } from "../components/LanguageSelector";
+
 const Index = () => {
   const [selectedMedia, setSelectedMedia] = useState('text');
   const [text, setText] = useState('');
@@ -18,9 +18,10 @@ const Index = () => {
 
   return (
     <>
-      <div className=" fixed  right-40 z-50 bg-background shadow-md rounded-md p-2">
-        <GoogleTranslateWidget />
-      </div>
+      <div className="hidden md:block fixed top-4 right-4 z-50 bg-background shadow-md rounded-md p-2">
+  
+</div>
+
 
       
 
@@ -30,7 +31,9 @@ const Index = () => {
         <Header
           selectedMedia={selectedMedia}
           setSelectedMedia={setSelectedMedia}
+          
         />
+        
 
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="mb-8">

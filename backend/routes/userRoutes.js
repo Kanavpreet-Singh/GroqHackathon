@@ -78,11 +78,9 @@ router.get('/history', userAuth, async (req, res) => {
     const userId = req.user.userid;
   
     try {
-      const userNews = await News.find({ userId }).sort({ createdAt: -1 });
-  
-      if (userNews.length === 0) {
-        return res.json([]);
-      }
+      const userNews = await News.find({ userId })
+        .sort({ createdAt: -1 })
+        .limit(5); 
   
       res.json(userNews);
     } catch (error) {
@@ -90,5 +88,5 @@ router.get('/history', userAuth, async (req, res) => {
       res.status(500).json([]);
     }
   });
-  
+   
 module.exports=router

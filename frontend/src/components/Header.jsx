@@ -4,8 +4,11 @@ import { useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 import LoginButton from "./LoginButton";
 import { Link, useLocation } from "react-router-dom";
-
+import { GoogleTranslateWidget } from "./GoogleTranslateWidget";
+import { ChevronDown } from "lucide-react";
+import "../../src/App.css"
 const Header = ({ selectedMedia, setSelectedMedia }) => {
+  const [showTranslate, setShowTranslate] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -40,6 +43,9 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
           </div>
 
           {/* Desktop Buttons */}
+          
+         
+
           <div className="hidden md:flex space-x-1 items-center">
             <Link to="/livenews">
               <Button

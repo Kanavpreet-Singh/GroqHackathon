@@ -42,7 +42,7 @@ const History = () => {
     <div className={`min-h-screen ${isDark ? 'dark-theme' : ''}`}>
       <Header />
       <div className="max-w-4xl mx-auto px-4 py-6">
-        <h1 className="text-4xl font-bold mb-6 text-center text-black dark:text-white">User History</h1>
+        <h1 className="text-4xl font-bold mb-6 text-center text-black dark:text-white">Your History</h1>
 
         {userhistory.length === 0 ? (
           <p className="text-center text-lg text-black dark:text-white">No history found.</p>
@@ -52,29 +52,45 @@ const History = () => {
             .map((uh, index) => (
               <div
                 key={index}
-                className={`rounded-2xl shadow p-6 mb-8 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+                className={`rounded-2xl shadow-lg border p-6 mb-8 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                  }`}
               >
-                <h2 className="text-2xl font-bold mb-4 text-black dark:text-white">
-                  {uh.originalText
+                {/* Circle Number */}
+                <h1 className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-200 text-xl font-bold text-blue-800 mb-4">
+                  {index + 1}
+                </h1>
+
+                {/* Original Text or Video URL */}
+                <h2 className="text-2xl font-semibold mb-4 text-black dark:text-white">
+                <span>❓</span>
+                  { uh.originalText
                     ? uh.originalText.substring(0, 100) + (uh.originalText.length > 100 ? '...' : '')
                     : uh.videoUrl
-                    ? uh.videoUrl
-                    : 'Failure'}
+                      ? uh.videoUrl
+                      : 'Failure'}
                 </h2>
+                  <br></br>
+                {/* Extracted Summary Heading */}
+                <h3 className="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-300">
+                  Extracted Summary:
+                </h3>
 
-                {/* Apply a wrapper with text styles that will override child elements */}
-                <div className={`custom-html-content text-lg ${isDark ? 'dark-content' : 'light-content'}`}>
+                {/* Summary Content */}
+                <div className={`custom-html-content text-base leading-relaxed ${isDark ? 'dark-content' : 'light-content'}`}>
+                  
                   <div
-                    dangerouslySetInnerHTML={{ 
-                      __html: processHtmlContent(uh.summarizedText) 
+                  
+                    dangerouslySetInnerHTML={{
+                      __html: processHtmlContent(uh.summarizedText)
                     }}
                   />
                 </div>
               </div>
             ))
         )}
+
       </div>
-      
+
       {/* Add a style tag to enforce text colors and sizes on all elements */}
       <style jsx global>{`
         .dark-theme .dark-content * {
