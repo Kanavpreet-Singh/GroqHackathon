@@ -79,6 +79,7 @@ const LiveNews = () => {
       : mockNews.filter((news) => news.category === selectedCategory);
 
   return (
+    
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
@@ -108,15 +109,15 @@ const LiveNews = () => {
             ))}
           </div>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex justify-center px-4">
+        <div className="flex flex-wrap gap-4 justify-center  px-4">
           {filteredNews.map((news) => (
             <Card
               key={news.id}
-              className="hover:shadow-lg transition-shadow duration-300 hover-lift bg-background cursor-pointer"
+              className="max-w-sm h-[350px] hover:shadow-lg transition-shadow duration-300 hover-lift bg-background cursor-pointer"
               onClick={() => setSelectedArticle(news)}
             >
-              <div className="w-full h-48 overflow-hidden rounded-t-lg">
+              <div className="w-full h- overflow-hidden rounded-t-lg">
                 <img
                   src={news.imageUrl}
                   alt={news.title}
@@ -141,6 +142,7 @@ const LiveNews = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
         </div>
       </main>
 
