@@ -1,6 +1,8 @@
 import { FileText, Mic, Video, Menu, Newspaper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import LoginButton from "./LoginButton";
 import { Link, useLocation } from "react-router-dom";
@@ -11,7 +13,7 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
   const [showTranslate, setShowTranslate] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-
+  const { toast } = useToast();
   // Handle optional media change
   const handleMediaClick = (mediaType) => {
     if (setSelectedMedia) {
@@ -43,18 +45,28 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
           </div>
 
           {/* Desktop Buttons */}
-          
-         
+
+
 
           <div className="hidden md:flex space-x-1 items-center">
             <Link to="/livenews">
+
+
               <Button
                 variant="ghost"
-                className={`flex items-center gap-2 ${
-                  location.pathname === "/livenews"
-                    ? "text-primary font-medium"
-                    : ""
-                }`}
+                className={`flex items-center gap-2 ${location.pathname === "/livenews" ? "text-primary font-medium" : ""
+                  }`}
+                onClick={() => {
+                  if (!localStorage.getItem("token")) {
+                    window.location.href = "/login";
+                    toast({
+                      title: "Login first",
+                      description: "Login first",
+                      variant: "default",
+                    });
+                    
+                  }
+                }}
               >
                 <Newspaper className="h-4 w-4" />
                 <span>Live News</span>
@@ -62,11 +74,10 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
             </Link>
             <Button
               variant={selectedMedia === "text" ? "default" : "outline"}
-              className={`flex items-center gap-2 btn-animated ${
-                selectedMedia === "text"
-                  ? "bg-news-primary hover:bg-news-dark"
-                  : ""
-              }`}
+              className={`flex items-center gap-2 btn-animated ${selectedMedia === "text"
+                ? "bg-news-primary hover:bg-news-dark"
+                : ""
+                }`}
               onClick={() => handleMediaClick("text")}
             >
               <FileText className="h-4 w-4" />
@@ -74,11 +85,10 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
             </Button>
             <Button
               variant={selectedMedia === "video" ? "default" : "outline"}
-              className={`flex items-center gap-2 btn-animated ${
-                selectedMedia === "video"
-                  ? "bg-news-primary hover:bg-news-dark"
-                  : ""
-              }`}
+              className={`flex items-center gap-2 btn-animated ${selectedMedia === "video"
+                ? "bg-news-primary hover:bg-news-dark"
+                : ""
+                }`}
               onClick={() => handleMediaClick("video")}
             >
               <Video className="h-4 w-4" />
@@ -86,11 +96,10 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
             </Button>
             <Button
               variant={selectedMedia === "audio" ? "default" : "outline"}
-              className={`flex items-center gap-2 btn-animated ${
-                selectedMedia === "audio"
-                  ? "bg-news-primary hover:bg-news-dark"
-                  : ""
-              }`}
+              className={`flex items-center gap-2 btn-animated ${selectedMedia === "audio"
+                ? "bg-news-primary hover:bg-news-dark"
+                : ""
+                }`}
               onClick={() => handleMediaClick("audio")}
             >
               <Mic className="h-4 w-4" />
@@ -120,11 +129,10 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
             <div className="py-2 space-y-1">
               <Link to="/livenews" className="block">
                 <button
-                  className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                    location.pathname === "/livenews"
-                      ? "bg-muted text-primary font-medium"
-                      : "text-foreground"
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${location.pathname === "/livenews"
+                    ? "bg-muted text-primary font-medium"
+                    : "text-foreground"
+                    }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Newspaper className="h-4 w-4" />
@@ -132,33 +140,30 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
                 </button>
               </Link>
               <button
-                className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                  selectedMedia === "text"
-                    ? "bg-muted text-primary font-medium"
-                    : "text-foreground"
-                }`}
+                className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${selectedMedia === "text"
+                  ? "bg-muted text-primary font-medium"
+                  : "text-foreground"
+                  }`}
                 onClick={() => handleMediaClick("text")}
               >
                 <FileText className="h-4 w-4" />
                 <span>Text</span>
               </button>
               <button
-                className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                  selectedMedia === "video"
-                    ? "bg-muted text-primary font-medium"
-                    : "text-foreground"
-                }`}
+                className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${selectedMedia === "video"
+                  ? "bg-muted text-primary font-medium"
+                  : "text-foreground"
+                  }`}
                 onClick={() => handleMediaClick("video")}
               >
                 <Video className="h-4 w-4" />
                 <span>Video</span>
               </button>
               <button
-                className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                  selectedMedia === "audio"
-                    ? "bg-muted text-primary font-medium"
-                    : "text-foreground"
-                }`}
+                className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${selectedMedia === "audio"
+                  ? "bg-muted text-primary font-medium"
+                  : "text-foreground"
+                  }`}
                 onClick={() => handleMediaClick("audio")}
               >
                 <Mic className="h-4 w-4" />
