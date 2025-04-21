@@ -61,8 +61,8 @@ const History = () => {
                 </h1>
 
                 {/* Original Text or Video URL */}
-                <h2 className="text-2xl font-semibold mb-4 text-black dark:text-white">
-                <span>❓</span>
+                <h2 className="text-2xl font-semibold mb-4 isDark:text-white">
+                {/* <span>❓</span> */}
                   { uh.originalText
                     ? uh.originalText.substring(0, 100) + (uh.originalText.length > 100 ? '...' : '')
                     : uh.videoUrl
@@ -71,7 +71,7 @@ const History = () => {
                 </h2>
                   <br></br>
                 {/* Extracted Summary Heading */}
-                <h3 className="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-300">
+                <h3 className="text-lg font-bold mb-2 text-black dark:text-white">
                   Extracted Summary:
                 </h3>
 
