@@ -100,7 +100,7 @@ const TextEditor = ({ text, setText }) => {
     });
   };
 
-  const handleQuestionSubmit = () => {
+  const handleQuestionSubmit = async () => {
     if (!question.trim()) {
       toast({
         title: "Empty question",
@@ -110,31 +110,47 @@ const TextEditor = ({ text, setText }) => {
       return;
     }
 
-    // Demo response - In real implementation, this would come from the backend
-    const demoResponses = [
-      "Based on the summary, I can explain that...",
-      "According to the analyzed text...",
-      "The main point related to your question is...",
-      "Looking at the context, I can tell you that..."
-    ];
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        "http://localhost:5001/answer-question",
+        {
+          summary: summary,
+          question: question.trim()
+        },
+        {
+          headers: {
+            token: token,
+          },
+        }
+      );
 
-    const randomResponse = demoResponses[Math.floor(Math.random() * demoResponses.length)] +
-      " This is a demo response that would be replaced with actual AI-generated answers in production.";
+      if (response.data && response.data.answer) {
+        // Add the new Q&A pair to history
+        setQaHistory([...qaHistory, {
+          question: question.trim(),
+          answer: response.data.answer,
+          timestamp: new Date().toISOString()
+        }]);
 
-    // Add the new Q&A pair to history
-    setQaHistory([...qaHistory, {
-      question: question.trim(),
-      answer: randomResponse,
-      timestamp: new Date().toISOString()
-    }]);
+        // Clear the question input
+        setQuestion("");
 
-    // Clear the question input
-    setQuestion("");
-
-    toast({
-      title: "Response received",
-      description: "Feel free to ask another question!",
-    });
+        toast({
+          title: "Response received",
+          description: "Feel free to ask another question!",
+        });
+      } else {
+        throw new Error("No answer received from server");
+      }
+    } catch (error) {
+      console.error("Error getting answer:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to get answer",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
