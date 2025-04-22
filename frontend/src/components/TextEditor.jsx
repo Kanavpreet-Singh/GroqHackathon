@@ -252,11 +252,13 @@ const TextEditor = ({ text, setText }) => {
 
       {summary && (
         <>
-          <div className="mb-6">
+          <div className="animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Generated Summary</h2>
+                <h2 className="text-xl font-semibold text-foreground">
+                  Generated Summary
+                </h2>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center gap-1">
@@ -294,7 +296,7 @@ const TextEditor = ({ text, setText }) => {
           </div>
 
           {fakeNewsAnalysis && (
-            <div className="mb-6">
+            <div className="mt-8 mb-6">
               <div className="flex items-center space-x-2 mb-4">
                 <AlertTriangle className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">Fake News Analysis</h2>
@@ -312,13 +314,8 @@ const TextEditor = ({ text, setText }) => {
                     </span>
                   </div>
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold">Analysis Confidence:</span>
-                      <span className="text-sm text-gray-500">
-                        {Math.round(fakeNewsAnalysis.confidence * 100)}% confidence in this assessment
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <span className="font-semibold">Confidence:</span>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
                       <div 
                         className={`h-2.5 rounded-full ${
                           fakeNewsAnalysis.is_fake ? 'bg-red-500' : 'bg-green-500'
@@ -326,12 +323,10 @@ const TextEditor = ({ text, setText }) => {
                         style={{ width: `${fakeNewsAnalysis.confidence * 100}%` }}
                       ></div>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">
-                      This score indicates how confident the AI is in its analysis. Higher scores mean the AI has found stronger evidence to support its conclusion.
-                    </p>
+                    <span className="text-sm text-gray-500">{Math.round(fakeNewsAnalysis.confidence * 100)}%</span>
                   </div>
                   <div>
-                    <span className="font-semibold">Key Findings:</span>
+                    <span className="font-semibold">Reasons:</span>
                     <ul className="list-disc list-inside mt-2 space-y-1">
                       {fakeNewsAnalysis.reasons.map((reason, index) => (
                         <li key={index} className="text-sm">{reason}</li>
@@ -339,7 +334,7 @@ const TextEditor = ({ text, setText }) => {
                     </ul>
                   </div>
                   <div>
-                    <span className="font-semibold">Fact-Checking Suggestions:</span>
+                    <span className="font-semibold">Suggestions:</span>
                     <ul className="list-disc list-inside mt-2 space-y-1">
                       {fakeNewsAnalysis.suggestions.map((suggestion, index) => (
                         <li key={index} className="text-sm">{suggestion}</li>

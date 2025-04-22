@@ -339,7 +339,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
           </div>
 
           {fakeNewsAnalysis && (
-            <div className="mb-6">
+            <div className="mt-8 mb-6">
               <div className="flex items-center space-x-2 mb-4">
                 <AlertTriangle className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">Fake News Analysis</h2>

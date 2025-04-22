@@ -32,6 +32,36 @@ def summarize_video_pipeline(original_text):
     if not original_text or not original_text.strip():
         raise ValueError("Empty input text provided")
 
+    # First, detect if the text is in Hindi
+    language_detection_prompt = PromptTemplate(
+        template="""
+        Analyze the following text and determine if it's primarily in Hindi or English.
+        Return only 'hindi' or 'english' as your response.
+        
+        Text:
+        {text}
+        """,
+        input_variables=["text"]
+    )
+    
+    language_chain = language_detection_prompt | llm
+    detected_language = language_chain.invoke({"text": original_text}).content.lower()
+    
+    # If the text is in Hindi, translate it to English first
+    if "hindi" in detected_language:
+        translation_prompt = PromptTemplate(
+            template="""
+            Translate the following Hindi text to English. Maintain the original meaning and context.
+            Return only the English translation.
+            
+            Hindi text:
+            {text}
+            """,
+            input_variables=["text"]
+        )
+        
+        translation_chain = translation_prompt | llm
+        original_text = translation_chain.invoke({"text": original_text}).content
     
     text_documents = [Document(page_content=original_text)]
     text_splitter = RecursiveCharacterTextSplitter(
@@ -44,9 +74,7 @@ def summarize_video_pipeline(original_text):
     if not documents:
         raise ValueError("No documents created after splitting")
 
-    
     parser = JsonOutputParser(pydantic_object=Summary)
-    
     
     prompt = PromptTemplate(
         template="""
@@ -72,7 +100,6 @@ def summarize_video_pipeline(original_text):
             result = chain.invoke({"input_text": chunk.page_content})
             return result
         except Exception as e:
-            
             return {"summary": chunk.page_content[:500] + "..."}
 
     partial_summaries = [summarize_chunk(c) for c in documents]
@@ -146,7 +173,13 @@ def summarize_video():
             return jsonify({"error": "Could not extract video ID"}), 400
 
         try:
-            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+            # First try to get English transcript
+            try:
+                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+            except:
+                # If English transcript not available, try Hindi
+                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['hi'])
+            
             transcript_text = " ".join([t['text'] for t in transcript_list])
         
         except Exception as e:
@@ -263,50 +296,75 @@ def detect_fake_news():
             You are an expert fact-checker and fake news detector with access to current information up to April 2025. 
             Analyze the following news content and determine if it's likely fake or not.
             
+            IMPORTANT: Be extremely conservative in labeling content as fake. Only label as fake if there is overwhelming evidence.
+            
             Guidelines:
-            1. Check for:
-               - Sensational or exaggerated claims
-               - Lack of credible sources
-               - Logical inconsistencies
-               - Emotional manipulation
-               - Unusual patterns in the text
-               - Claims that contradict established facts
-               - Claims about future events that are impossible to verify
-               - Claims about past events that contradict known facts
-               - Specific factual claims about recent events (e.g., sports match results, election outcomes)
-               - Claims that can be verified against official records or recent news
+            1. Source Evaluation (Most Important):
+               - Content from established news organizations is presumed credible unless proven otherwise
+               - YouTube channels with large followings and good reputation are generally credible
+               - Consider the channel's history of accuracy and reliability
+               - Look for official partnerships or affiliations with credible organizations
+               - Check if the content creator has relevant expertise or credentials
             
-            2. Consider:
-               - The tone and language used
-               - The presence of verifiable facts
-               - The credibility of sources mentioned
-               - The overall plausibility of claims
-               - Current events and recent developments
-               - The timeline of events mentioned
-               - Official records and recent news reports
-               - Factual claims that can be cross-verified
+            2. Content Analysis Framework:
+               a) Fact Verification:
+                  - Separate facts from opinions
+                  - Verify only factual claims, not opinions or analysis
+                  - Look for specific, verifiable information
+                  - Check dates, numbers, and specific claims
+               
+               b) Context Understanding:
+                  - Consider the content's purpose (news, analysis, opinion)
+                  - Understand the target audience
+                  - Consider cultural and regional context
+                  - Account for different reporting styles
             
-            3. For current events (2025):
-               - Verify against known facts and recent developments
-               - Consider the possibility of breaking news
-               - Be cautious about definitive statements about future events
-               - Acknowledge uncertainty when appropriate
-               - Cross-reference with official sources for recent events
-               - Pay special attention to verifiable facts (match results, scores, dates)
+            3. Verification Standards:
+               - Require multiple independent sources for fake news claims
+               - Official statements or documents are strong evidence
+               - Expert consensus is important for technical claims
+               - Historical context matters for current events
+               - Consider the possibility of new information
             
-            4. For factual claims:
-               - If a specific claim can be verified (e.g., match result), state this clearly
-               - Provide the correct information if the claim is false
-               - Explain why the claim is false with specific evidence
-               - Consider the timing of the event in relation to the claim
+            4. Red Flags (Require Multiple to Consider Fake):
+               - Clear contradictions with established facts
+               - Proven manipulation of images or videos
+               - Demonstrated history of spreading misinformation
+               - Lack of any credible sources
+               - Clear evidence of fabrication
             
-            5. Provide:
-               - A clear determination of whether the news is likely fake
-               - A confidence score (0-1)
-               - Specific reasons supporting your analysis
-               - Suggestions for fact-checking
-               - Clarification about any temporal aspects of the claims
-               - Correct information if a false claim is detected
+            5. Confidence Levels:
+               - Very High (0.9-1.0): Multiple independent verifications, official documentation
+               - High (0.7-0.8): Strong evidence from credible sources
+               - Medium (0.5-0.6): Some verification possible
+               - Low (0.3-0.4): Limited verification, mostly opinions
+               - Very Low (0.0-0.2): Speculative content
+            
+            6. Special Considerations:
+               - Breaking news may have incomplete information
+               - Different perspectives don't necessarily mean fake news
+               - Opinions and analysis are not fake news
+               - Consider the possibility of new developments
+               - Account for different reporting styles
+            
+            7. Output Requirements:
+               a) Determination:
+                  - Only label as fake with overwhelming evidence
+                  - Consider "unverified" instead of "fake" when uncertain
+                  - Acknowledge limitations in verification
+               
+               b) Evidence:
+                  - Provide specific examples of false claims
+                  - Reference credible sources for verification
+                  - Explain the verification process
+                  - Note any uncertainties
+            
+            8. Final Checks:
+               - Is there overwhelming evidence of fabrication?
+               - Are multiple independent sources confirming the falsehood?
+               - Is this a matter of opinion rather than fact?
+               - Could this be new information not yet widely known?
+               - Is the source generally credible?
             
             News content:
             {text}
@@ -321,6 +379,14 @@ def detect_fake_news():
         
         chain = prompt | llm | parser
         result = chain.invoke({"text": text})
+        
+        # Additional validation of the result
+        if result.get("is_fake", False):
+            # Require higher confidence for fake news claims
+            if result.get("confidence", 0) < 0.8:
+                result["is_fake"] = False
+                result["confidence"] = 1 - result["confidence"]
+                result["reasons"] = ["Content could not be verified as fake with sufficient confidence"]
         
         return jsonify({
             "analysis": result,

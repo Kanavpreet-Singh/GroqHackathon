@@ -295,7 +295,9 @@ const AudioEditor = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Generated Summary</h2>
+                <h2 className="text-xl font-semibold text-foreground">
+                  Generated Summary
+                </h2>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center gap-1">
@@ -333,7 +335,7 @@ const AudioEditor = () => {
           </div>
 
           {fakeNewsAnalysis && (
-            <div className="mb-6">
+            <div className="mt-8 mb-6">
               <div className="flex items-center space-x-2 mb-4">
                 <AlertTriangle className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">Fake News Analysis</h2>
