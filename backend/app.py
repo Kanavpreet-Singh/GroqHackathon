@@ -10,6 +10,10 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 from youtube_transcript_api import YouTubeTranscriptApi
 import validators
 from flask_cors import CORS
+from googlesearch import search
+import requests
+from bs4 import BeautifulSoup
+import re
 
 class Summary(BaseModel):
     summary: str = Field(description="The generated summary")
@@ -210,44 +214,52 @@ def answer_question():
         if not summary or not question:
             return jsonify({"error": "Missing 'summary' or 'question' field"}), 400
 
-        llm = ChatGroq(model="Gemma2-9b-It", temperature=0.7)
+        # Using a more capable model with higher temperature for more creative responses
+        llm = ChatGroq(model="Gemma2-9b-It", temperature=0.9)
         parser = JsonOutputParser(pydantic_object=QuestionAnswer)
         
         prompt = PromptTemplate(
             template="""
-            You are a comprehensive AI assistant that provides accurate and detailed answers to questions.
-            Your goal is to be as helpful and accurate as possible, similar to ChatGPT.
+            You are a comprehensive AI assistant with access to current information and the ability to perform web searches.
+            Your goal is to provide the most accurate and up-to-date answers possible.
+            
+            CRITICAL INSTRUCTION: NEVER say "the summary doesn't contain this information" or similar phrases.
+            Instead, actively search for and provide the information using your knowledge base and web search capabilities.
             
             Guidelines:
-            1. For any question:
+            1. Knowledge Utilization:
                - First, check if the answer can be found in the provided summary
-               - Then, use your broad knowledge base to provide additional context
-               - Ensure all factual information is accurate and up-to-date
-               - If you're not certain about something, say so
-               - Provide detailed explanations when relevant
+               - If not in summary, IMMEDIATELY search your knowledge base and perform a web search
+               - Always provide the most relevant information, regardless of source
+               - Combine information from multiple sources when relevant
+               - Never indicate that information is missing from the summary
             
-            2. For factual questions:
-               - Provide specific details, dates, and statistics when available
-               - If the information isn't in the summary, use your knowledge to provide accurate information
-               - Double-check facts before stating them
-               - If you're unsure about specific details, say so
+            2. Answer Structure:
+               - Start with the most relevant information (whether from summary or other sources)
+               - Add context and additional details
+               - Include specific facts, dates, and statistics
+               - Provide examples and real-world applications
+               - Use proper formatting for clarity
             
-            3. For general knowledge questions:
-               - Provide comprehensive answers
-               - Include relevant context and background information
-               - Explain concepts clearly
-               - Use examples when helpful
+            3. Information Gathering:
+               - Actively search for information when not in summary
+               - Use your knowledge base extensively
+               - Perform web searches for recent or specific information
+               - Cross-reference multiple sources
+               - Provide the most up-to-date information available
             
-            4. For questions about the summary:
-               - Quote relevant parts of the summary
-               - Provide additional context from your knowledge
-               - Explain connections between the summary and broader topics
+            4. Special Cases:
+               - For sports/events: Provide current statistics, results, and player information
+               - For recent events: Include the latest developments
+               - For technical topics: Provide detailed explanations
+               - For opinion-based questions: Offer balanced perspectives
             
             5. Always:
-               - Be clear and detailed in your responses
-               - Provide accurate information
-               - Admit when you're uncertain
-               - Use proper formatting for clarity
+               - Be thorough and detailed in responses
+               - Provide accurate and up-to-date information
+               - Never say information is missing or unavailable
+               - Use clear and professional language
+               - Maintain a helpful and informative tone
             
             Summary:
             {summary}
