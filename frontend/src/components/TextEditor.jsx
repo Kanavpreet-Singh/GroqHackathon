@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
-import { FileText, Sparkles, Copy, Send, X, MessageCircle } from "lucide-react";
+import { FileText, Sparkles, Copy, Send, X, MessageCircle, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeText } from "@/utils/api";
 import axios from "axios"
@@ -12,6 +12,8 @@ const TextEditor = ({ text, setText }) => {
   const [question, setQuestion] = useState("");
   const [qaHistory, setQaHistory] = useState([]);
   const [isQaSessionActive, setIsQaSessionActive] = useState(false);
+  const [isCheckingFakeNews, setIsCheckingFakeNews] = useState(false);
+  const [fakeNewsAnalysis, setFakeNewsAnalysis] = useState(null);
   const { toast } = useToast();
 
   // Use useEffect to apply white color to the heading
@@ -30,6 +32,12 @@ const TextEditor = ({ text, setText }) => {
       });
       return;
     }
+
+    // Clear previous analysis
+    setSummary("");
+    setFakeNewsAnalysis(null);
+    setQaHistory([]);
+    setIsQaSessionActive(false);
 
     setIsAnalyzing(true);
 
@@ -153,6 +161,53 @@ const TextEditor = ({ text, setText }) => {
     }
   };
 
+  const handleFakeNewsCheck = async () => {
+    if (!summary) {
+      toast({
+        title: "No summary available",
+        description: "Please generate a summary first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCheckingFakeNews(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        "http://localhost:5001/detect-fake-news",
+        {
+          text: summary
+        },
+        {
+          headers: {
+            token: token,
+          },
+        }
+      );
+
+      if (response.data?.analysis) {
+        setFakeNewsAnalysis(response.data.analysis);
+        toast({
+          title: "Analysis complete",
+          description: "Fake news detection completed",
+        });
+      } else {
+        throw new Error("No analysis returned from server");
+      }
+    } catch (error) {
+      console.error("Error checking for fake news:", error);
+      toast({
+        title: "Analysis failed",
+        description: error.response?.data?.error || "Failed to analyze for fake news",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingFakeNews(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="mb-6">
@@ -203,10 +258,31 @@ const TextEditor = ({ text, setText }) => {
                 <Sparkles className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">Generated Summary</h2>
               </div>
-              <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center gap-1">
-                <Copy className="h-4 w-4" />
-                <span>Copy</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center gap-1">
+                  <Copy className="h-4 w-4" />
+                  <span>Copy</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleFakeNewsCheck} 
+                  className="flex items-center gap-1"
+                  disabled={isCheckingFakeNews}
+                >
+                  {isCheckingFakeNews ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                      <span>Checking...</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="h-4 w-4" />
+                      <span>Check for Fake News</span>
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
 
             <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
@@ -216,6 +292,64 @@ const TextEditor = ({ text, setText }) => {
               />
             </div>
           </div>
+
+          {fakeNewsAnalysis && (
+            <div className="mb-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <AlertTriangle className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold text-foreground">Fake News Analysis</h2>
+              </div>
+              <div className={`bg-muted p-6 rounded-xl shadow-md border ${
+                fakeNewsAnalysis.is_fake ? 'border-red-500' : 'border-green-500'
+              }`}>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">Result:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm ${
+                      fakeNewsAnalysis.is_fake ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {fakeNewsAnalysis.is_fake ? 'Likely Fake News' : 'Likely Real News'}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold">Analysis Confidence:</span>
+                      <span className="text-sm text-gray-500">
+                        {Math.round(fakeNewsAnalysis.confidence * 100)}% confidence in this assessment
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className={`h-2.5 rounded-full ${
+                          fakeNewsAnalysis.is_fake ? 'bg-red-500' : 'bg-green-500'
+                        }`} 
+                        style={{ width: `${fakeNewsAnalysis.confidence * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      This score indicates how confident the AI is in its analysis. Higher scores mean the AI has found stronger evidence to support its conclusion.
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Key Findings:</span>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      {fakeNewsAnalysis.reasons.map((reason, index) => (
+                        <li key={index} className="text-sm">{reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Fact-Checking Suggestions:</span>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      {fakeNewsAnalysis.suggestions.map((suggestion, index) => (
+                        <li key={index} className="text-sm">{suggestion}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Q&A Section */}
           <div className="mt-6">

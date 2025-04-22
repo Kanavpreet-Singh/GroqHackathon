@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
-import { Video, Sparkles, Copy, ExternalLink, Play, MessageCircle, Send, X } from "lucide-react";
+import { Video, Sparkles, Copy, ExternalLink, Play, MessageCircle, Send, X, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeVideo } from "@/utils/api";
 import axios from "axios";
@@ -13,6 +13,8 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
   const [question, setQuestion] = useState("");
   const [qaHistory, setQaHistory] = useState([]);
   const [isQaSessionActive, setIsQaSessionActive] = useState(false);
+  const [isCheckingFakeNews, setIsCheckingFakeNews] = useState(false);
+  const [fakeNewsAnalysis, setFakeNewsAnalysis] = useState(null);
   const { toast } = useToast();
 
   // Use useEffect to apply white color to the heading
@@ -33,17 +35,17 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
       return;
     }
 
+    // Clear previous analysis
+    setSummary("");
+    setFakeNewsAnalysis(null);
+    setQaHistory([]);
+    setIsQaSessionActive(false);
+
     setIsAnalyzing(true);
 
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        toast({
-          title: "Login first",
-          description: "Please ",
-          variant: "destructive",
-        });
-      }
+
       const response = await axios.post(
         "http://localhost:5000/news/video",
         {
@@ -64,16 +66,17 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
         setSummary(summaryText);
         toast({
           title: "Analysis complete",
-          description: "The video was successfully analyzed",
+          description: "The video was successfully summarized",
         });
       } else {
         throw new Error("No summary returned from server");
       }
+
     } catch (error) {
       console.error("Error analyzing video:", error);
       toast({
         title: "Analysis failed",
-        description: error.response?.data?.message || "Failed to analyze video",
+        description: error.response?.data?.message || "Failed to summarize video",
         variant: "destructive",
       });
     } finally {
@@ -167,6 +170,53 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
     }
   };
 
+  const handleFakeNewsCheck = async () => {
+    if (!summary) {
+      toast({
+        title: "No summary available",
+        description: "Please generate a summary first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCheckingFakeNews(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        "http://localhost:5001/detect-fake-news",
+        {
+          text: summary
+        },
+        {
+          headers: {
+            token: token,
+          },
+        }
+      );
+
+      if (response.data?.analysis) {
+        setFakeNewsAnalysis(response.data.analysis);
+        toast({
+          title: "Analysis complete",
+          description: "Fake news detection completed",
+        });
+      } else {
+        throw new Error("No analysis returned from server");
+      }
+    } catch (error) {
+      console.error("Error checking for fake news:", error);
+      toast({
+        title: "Analysis failed",
+        description: error.response?.data?.error || "Failed to analyze for fake news",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingFakeNews(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="mb-6">
@@ -253,15 +303,31 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
                   Generated Summary
                 </h2>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopy}
-                className="flex items-center gap-1"
-              >
-                <Copy className="h-4 w-4" />
-                <span>Copy</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleCopy} className="flex items-center gap-1">
+                  <Copy className="h-4 w-4" />
+                  <span>Copy</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleFakeNewsCheck} 
+                  className="flex items-center gap-1"
+                  disabled={isCheckingFakeNews}
+                >
+                  {isCheckingFakeNews ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                      <span>Checking...</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="h-4 w-4" />
+                      <span>Check for Fake News</span>
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
 
             <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
@@ -271,6 +337,57 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
               />
             </div>
           </div>
+
+          {fakeNewsAnalysis && (
+            <div className="mb-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <AlertTriangle className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold text-foreground">Fake News Analysis</h2>
+              </div>
+              <div className={`bg-muted p-6 rounded-xl shadow-md border ${
+                fakeNewsAnalysis.is_fake ? 'border-red-500' : 'border-green-500'
+              }`}>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">Result:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm ${
+                      fakeNewsAnalysis.is_fake ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {fakeNewsAnalysis.is_fake ? 'Likely Fake News' : 'Likely Real News'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Confidence:</span>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                      <div 
+                        className={`h-2.5 rounded-full ${
+                          fakeNewsAnalysis.is_fake ? 'bg-red-500' : 'bg-green-500'
+                        }`} 
+                        style={{ width: `${fakeNewsAnalysis.confidence * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm text-gray-500">{Math.round(fakeNewsAnalysis.confidence * 100)}%</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Reasons:</span>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      {fakeNewsAnalysis.reasons.map((reason, index) => (
+                        <li key={index} className="text-sm">{reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Suggestions:</span>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      {fakeNewsAnalysis.suggestions.map((suggestion, index) => (
+                        <li key={index} className="text-sm">{suggestion}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Q&A Section */}
           <div className="mt-6">

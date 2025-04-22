@@ -17,6 +17,12 @@ class Summary(BaseModel):
 class QuestionAnswer(BaseModel):
     answer: str = Field(description="The answer to the question")
 
+class FakeNewsAnalysis(BaseModel):
+    is_fake: bool = Field(description="Whether the news is likely fake")
+    confidence: float = Field(description="Confidence score of the analysis")
+    reasons: list[str] = Field(description="List of reasons supporting the analysis")
+    suggestions: list[str] = Field(description="Suggestions for fact-checking")
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["http://localhost:8080"]}})
 
@@ -229,6 +235,95 @@ def answer_question():
         
         return jsonify({
             "answer": result["answer"],
+            "status": "success"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
+
+@app.route('/detect-fake-news', methods=['POST'])
+def detect_fake_news():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+            
+        text = data.get("text")
+        if not text:
+            return jsonify({"error": "Missing 'text' field"}), 400
+
+        llm = ChatGroq(model="Gemma2-9b-It", temperature=0.3)
+        parser = JsonOutputParser(pydantic_object=FakeNewsAnalysis)
+        
+        prompt = PromptTemplate(
+            template="""
+            You are an expert fact-checker and fake news detector with access to current information up to April 2025. 
+            Analyze the following news content and determine if it's likely fake or not.
+            
+            Guidelines:
+            1. Check for:
+               - Sensational or exaggerated claims
+               - Lack of credible sources
+               - Logical inconsistencies
+               - Emotional manipulation
+               - Unusual patterns in the text
+               - Claims that contradict established facts
+               - Claims about future events that are impossible to verify
+               - Claims about past events that contradict known facts
+               - Specific factual claims about recent events (e.g., sports match results, election outcomes)
+               - Claims that can be verified against official records or recent news
+            
+            2. Consider:
+               - The tone and language used
+               - The presence of verifiable facts
+               - The credibility of sources mentioned
+               - The overall plausibility of claims
+               - Current events and recent developments
+               - The timeline of events mentioned
+               - Official records and recent news reports
+               - Factual claims that can be cross-verified
+            
+            3. For current events (2025):
+               - Verify against known facts and recent developments
+               - Consider the possibility of breaking news
+               - Be cautious about definitive statements about future events
+               - Acknowledge uncertainty when appropriate
+               - Cross-reference with official sources for recent events
+               - Pay special attention to verifiable facts (match results, scores, dates)
+            
+            4. For factual claims:
+               - If a specific claim can be verified (e.g., match result), state this clearly
+               - Provide the correct information if the claim is false
+               - Explain why the claim is false with specific evidence
+               - Consider the timing of the event in relation to the claim
+            
+            5. Provide:
+               - A clear determination of whether the news is likely fake
+               - A confidence score (0-1)
+               - Specific reasons supporting your analysis
+               - Suggestions for fact-checking
+               - Clarification about any temporal aspects of the claims
+               - Correct information if a false claim is detected
+            
+            News content:
+            {text}
+            
+            {format_instructions}
+            """,
+            input_variables=["text"],
+            partial_variables={
+                "format_instructions": parser.get_format_instructions()
+            },
+        )
+        
+        chain = prompt | llm | parser
+        result = chain.invoke({"text": text})
+        
+        return jsonify({
+            "analysis": result,
             "status": "success"
         })
 
