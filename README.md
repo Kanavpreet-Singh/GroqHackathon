@@ -126,7 +126,11 @@ Problem Statement 1- Weave AI magic with Groq.
     npm run dev
 3. **Backend Setup**
     ```bash
-    cd ../backend
+    cd ..
+    pip install -r requirement.txt
+    cd backend
+
+    
     npm install
 
 Create a .env file in the backend directory with the following content:
