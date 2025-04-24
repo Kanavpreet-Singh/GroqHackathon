@@ -30,7 +30,7 @@ Problem Statement 1- Weave AI magic with Groq.
 ### Team Members:  
 - Lakshay Bajaj [LAKSHAY2100](https://github.com/LAKSHAY2100) (AI Developer)  
 - Rishuraj Pandey [RishurajPandey](https://github.com/RishurajPandey) (Frontend Developer) 
-- Kanavpreet Singh [anavpreet Singh](https://github.com/Kanavpreet-Singh) (Backend developer)  
+- Kanavpreet Singh [Kanavpreet Singh](https://github.com/Kanavpreet-Singh) (Backend developer)  
 
 
 ### Our Approach:  
