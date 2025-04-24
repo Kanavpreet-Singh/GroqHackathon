@@ -1,0 +1,31 @@
+.card-container {
+    perspective: 1000px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 350px; /* Adjust as needed */
+    margin-left: 18px;
+  }
+  
+  .card {
+    width: 350px; /* Adjust as needed */
+    height: 350px; /* Adjust as needed */
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 10px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transition: transform 0.1s ease;
+    transform-style: preserve-3d;
+    padding: 20px;
+    text-align: center;
+    margin-right: 18px;
+  }
+
+  .card h2 {
+    color: var(--heading-color);
+  }
+  
+  .card p {
+    color: var(--text-color);
+  }
+  
