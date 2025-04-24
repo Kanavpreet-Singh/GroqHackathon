@@ -121,7 +121,7 @@ Problem Statement 1- Weave AI magic with Groq.
 
 2. **Frontend Setup**
     ```bash
-    cd frontned
+    cd frontend
     npm install
     npm run dev
 3. **Backend Setup**
