@@ -30,7 +30,7 @@ Problem Statement 1- Weave AI magic with Groq.
 ### Team Members:  
 - Lakshay Bajaj [LAKSHAY2100](https://github.com/LAKSHAY2100) (AI Developer)  
 - Rishuraj Pandey [RishurajPandey](https://github.com/RishurajPandey) (Frontend Developer) 
-- Kanavpreet Singh [Kanavpreet Singh](https://github.com/Kanavpreet-Singh) (Backend developer)  
+- Kanavpreet Singh [Kanavpreet-Singh](https://github.com/Kanavpreet-Singh) (Backend developer)  
 
 
 ### Our Approach:  
@@ -87,8 +87,8 @@ Problem Statement 1- Weave AI magic with Groq.
 
 ## 📽️ Demo & Deliverables
 
-- **Demo Video Link:** (https://youtu.be/Hwiuqds9eFo) 
-- **Pitch Deck / PPT Link:** https://www.canva.com/design/DAGldy7Um8Q/CmFE5grHb7iJ9NWNKsJloQ/view?utm_content=DAGldy7Um8Q&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=he74d13336f
+- [**Demo Video Link**](https://youtu.be/Hwiuqds9eFo) 
+- [**Pitch Deck / PPT Link**](https://www.canva.com/design/DAGldy7Um8Q/CmFE5grHb7iJ9NWNKsJloQ/view?utm_content=DAGldy7Um8Q&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=he74d13336f)
 
 ---
 
