@@ -121,7 +121,7 @@ const TextEditor = ({ text, setText }) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "http://localhost:5001/answer-question",
+        "https://brieflensflask.onrender.com/answer-question",
         {
           summary: summary,
           question: question.trim()
@@ -176,7 +176,7 @@ const TextEditor = ({ text, setText }) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "http://localhost:5001/detect-fake-news",
+        "https://brieflensflask.onrender.com/detect-fake-news",
         {
           text: summary
         },

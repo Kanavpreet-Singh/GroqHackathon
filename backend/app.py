@@ -28,7 +28,11 @@ class FakeNewsAnalysis(BaseModel):
     suggestions: list[str] = Field(description="Suggestions for fact-checking")
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:8080"]}})
+CORS(app, resources={r"/*": {"origins": [
+    "http://localhost:8080",
+    "https://brieflensnews.onrender.com"
+]}})
+
 
 def summarize_video_pipeline(original_text):
     llm = ChatGroq(model="Gemma2-9b-It", temperature=0.3)
@@ -129,6 +133,10 @@ def summarize_video_pipeline(original_text):
     final_summary = final_chain.invoke({"input": final_combined_summary})
     
     return final_summary.content
+
+@app.route("/")
+def home():
+    return "Flask app is running!"
 
 @app.route('/summarize', methods=['POST'])
 def summarize():
@@ -411,5 +419,6 @@ def detect_fake_news():
             "status": "error"
         }), 500
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
