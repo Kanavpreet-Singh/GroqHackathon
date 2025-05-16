@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import axios from 'axios';
 import { useTheme } from "@/context/ThemeContext";
-
+import { BASE_URL } from '../helper';
+BASE_URL
 const History = () => {
   const [userhistory, setUserHistory] = useState([]);
   const { isDark } = useTheme();
@@ -10,7 +11,7 @@ const History = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const history = await axios.get('http://localhost:5000/user/history', {
+        const history = await axios.get(`${BASE_URL}/user/history`, {
           headers: {
             token: localStorage.getItem('token'),
           },

@@ -7,7 +7,7 @@ import { Mic, Sparkles, Copy, Volume2, Play, Pause, MessageCircle, Send, X, Aler
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios"
 import { analyzeAudio } from "@/utils/api";
-
+import { BASE_URL } from "../helper";
 const AudioEditor = () => {
   const [audioFile, setAudioFile] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -42,7 +42,7 @@ const AudioEditor = () => {
     formData.append("audio", audioFile);
 
     try {
-      const resp = await axios.post("http://localhost:5000/news/audio", formData, {
+      const resp = await axios.post(`${BASE_URL}/news/audio`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           token: localStorage.getItem("token"), 
@@ -51,7 +51,7 @@ const AudioEditor = () => {
       
 
       const response = await axios.post(
-        "http://localhost:5000/news/text",
+        `${BASE_URL}/news/text`,
         {
           inputType: "audio",
           originalText: resp.data.transcription,

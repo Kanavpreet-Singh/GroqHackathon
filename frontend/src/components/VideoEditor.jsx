@@ -6,7 +6,7 @@ import { Video, Sparkles, Copy, ExternalLink, Play, MessageCircle, Send, X, Aler
 import { useToast } from "@/hooks/use-toast";
 import { analyzeVideo } from "@/utils/api";
 import axios from "axios";
-
+import { BASE_URL } from "../helper";
 const VideoEditor = ({ videoUrl, setVideoUrl }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState("");
@@ -47,7 +47,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
       const token = localStorage.getItem("token");
 
       const response = await axios.post(
-        "http://localhost:5000/news/video",
+        `${BASE_URL}/news/video`,
         {
           inputType: "video",
           videoUrl: videoUrl,

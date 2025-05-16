@@ -5,7 +5,7 @@ import { FileText, Sparkles, Copy, Send, X, MessageCircle, AlertTriangle } from 
 import { useToast } from "@/hooks/use-toast";
 import { analyzeText } from "@/utils/api";
 import axios from "axios"
-
+import { BASE_URL } from "../helper";
 const TextEditor = ({ text, setText }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState("");
@@ -45,7 +45,7 @@ const TextEditor = ({ text, setText }) => {
       const token = localStorage.getItem("token");
 
       const response = await axios.post(
-        "http://localhost:5000/news/text",
+        `${BASE_URL}/news/text`,
         {
           inputType: "text",
           originalText: text,

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
+
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import {
@@ -11,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import axios from "axios";
+import { BASE_URL } from "../helper";
 
 const categories = ["All", "Technology", "Sports", "Science", "Business"];
 
@@ -25,7 +27,7 @@ const LiveNews = () => {
       try {
         setLoading(true);
         setError(null);
-        const resp = await axios.get("http://localhost:5000/news/livenews", {
+        const resp = await axios.get(`${BASE_URL}/news/livenews`, {
           headers: {
             token: localStorage.getItem("token")
           }

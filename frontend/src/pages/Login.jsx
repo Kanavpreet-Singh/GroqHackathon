@@ -8,6 +8,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/context/ThemeContext";
 import axios from "axios";
+import { BASE_URL } from "../helper";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -31,7 +32,7 @@ const Login = () => {
     const values = form.getValues(); 
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/user/signin', {
+      const response = await axios.post(`${BASE_URL}/user/signin`, {
         email: values.email,
         password: values.password
       });
@@ -62,7 +63,7 @@ const Login = () => {
     console.log(values);
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/user/signup', {
+      const response = await axios.post(`${BASE_URL}/user/signup`, {
         firstname: values.name,
         email: values.email,
         password: values.password,
