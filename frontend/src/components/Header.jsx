@@ -69,12 +69,13 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
                     ? "bg-news-primary hover:bg-news-dark"
                     : ""
                 }`}
-                onClick={() => {
+                onClick={(e) => {
                   if (!localStorage.getItem("token")) {
-                    window.location.href = "/login";
+                    e.preventDefault();
+                    navigate("/login", { state: { from: { pathname: "/livenews" } } });
                     toast({
-                      title: "Login first",
-                      description: "Login first",
+                      title: "Authentication Required",
+                      description: "Please login to access Live News",
                       variant: "default",
                     });
                   }
