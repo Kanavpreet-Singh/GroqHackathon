@@ -92,7 +92,19 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
                   ? "bg-news-primary hover:bg-news-dark"
                   : ""
               }`}
-              onClick={() => handleMediaClick("text")}
+              onClick={(e) => {
+                if (!localStorage.getItem("token")) {
+                  e.preventDefault();
+                  navigate("/login", { state: { from: { pathname: "/" } } });
+                  toast({
+                    title: "Authentication Required",
+                    description: "Please login to analyze text content",
+                    variant: "default",
+                  });
+                  return;
+                }
+                handleMediaClick("text");
+              }}
             >
               <FileText className="h-4 w-4" />
               <span>Text</span>
@@ -104,7 +116,19 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
                   ? "bg-news-primary hover:bg-news-dark"
                   : ""
               }`}
-              onClick={() => handleMediaClick("video")}
+              onClick={(e) => {
+                if (!localStorage.getItem("token")) {
+                  e.preventDefault();
+                  navigate("/login", { state: { from: { pathname: "/" } } });
+                  toast({
+                    title: "Authentication Required",
+                    description: "Please login to analyze video content",
+                    variant: "default",
+                  });
+                  return;
+                }
+                handleMediaClick("video");
+              }}
             >
               <Video className="h-4 w-4" />
               <span>Video</span>
@@ -116,7 +140,19 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
                   ? "bg-news-primary hover:bg-news-dark"
                   : ""
               }`}
-              onClick={() => handleMediaClick("audio")}
+              onClick={(e) => {
+                if (!localStorage.getItem("token")) {
+                  e.preventDefault();
+                  navigate("/login", { state: { from: { pathname: "/" } } });
+                  toast({
+                    title: "Authentication Required",
+                    description: "Please login to analyze audio content",
+                    variant: "default",
+                  });
+                  return;
+                }
+                handleMediaClick("audio");
+              }}
             >
               <Mic className="h-4 w-4" />
               <span>Audio</span>
