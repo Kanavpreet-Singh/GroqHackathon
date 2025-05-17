@@ -23,11 +23,48 @@ const Login = () => {
     defaultValues: {
       name: "",
       email: "",
-      age: 15,
+      age: null,  // Set to null initially
       password: ""
     },
   });
-  
+
+  // In the signup form field section
+  <FormField
+    control={form.control}
+    name="age"
+    rules={{
+      required: "Age is required",
+      min: {
+        value: 13,
+        message: "You must be at least 13 years old"
+      },
+      max: {
+        value: 120,
+        message: "Please enter a valid age"
+      },
+      validate: (value) => {
+        const num = Number(value);
+        return Number.isInteger(num) || "Age must be a whole number";
+      }
+    }}
+    render={({ field }) => (
+      <FormItem>
+        <FormLabel>Age</FormLabel>
+        <FormControl>
+          <Input
+            type="number"
+            placeholder="Enter your age"
+            min={13}
+            max={120}
+            required
+            {...field}
+            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+          />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
   const handleSubmitLogin = async () => {
     const values = form.getValues(); 
     setLoading(true);

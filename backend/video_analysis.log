@@ -1,0 +1,6 @@
+2025-05-17 14:41:10,831 - werkzeug - WARNING -  * Debugger is active!
+2025-05-17 14:41:10,836 - werkzeug - INFO -  * Debugger PIN: 262-574-571
+2025-05-17 14:58:52,266 - werkzeug - INFO -  * Detected change in 'D:\\HackHazards\\GroqHackathon\\backend\\app.py', reloading
+2025-05-17 14:58:54,935 - werkzeug - WARNING -  * Debugger is active!
+2025-05-17 14:58:54,940 - werkzeug - INO -  * Debugger PIN: 262-574-571
+2025-05-17 15:00:28,954 - werkzeug - INFO -  * Detected change in 'D:\\HackHazards\\GroqHackathon\\backend\\app.py', reloading
