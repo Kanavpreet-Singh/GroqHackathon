@@ -1,1 +1,1 @@
-export const BASE_URL = "https://brieflens.onrender.com";
+export const BASE_URL = "https://groqhackathon.onrender.com";

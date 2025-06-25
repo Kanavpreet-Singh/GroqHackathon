@@ -9,6 +9,7 @@ from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
 from youtube_transcript_api import YouTubeTranscriptApi
 import validators
+
 from flask_cors import CORS
 from googlesearch import search
 import requests
@@ -185,30 +186,53 @@ def summarize_video():
             return jsonify({"error": "Could not extract video ID"}), 400
 
         try:
+            app.logger.info(f"Attempting to fetch transcript for video ID: {video_id}")
+            
             # First try to get English transcript
             try:
                 transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-            except:
+                app.logger.info("Successfully retrieved English transcript")
+            except Exception as e:
+                app.logger.warning(f"English transcript unavailable: {str(e)}")
                 # If English transcript not available, try Hindi
-                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['hi'])
+                try:
+                    transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['hi'])
+                    app.logger.info("Successfully retrieved Hindi transcript")
+                except Exception as e2:
+                    app.logger.error(f"Hindi transcript also unavailable: {str(e2)}")
+                    return jsonify({"error": f"No transcripts available in supported languages: {str(e2)}"}), 404
             
             transcript_text = " ".join([t['text'] for t in transcript_list])
-        
+            app.logger.info(f"Transcript length: {len(transcript_text)} characters")
+            
+            if len(transcript_text) < 50:  # Arbitrary minimum length
+                return jsonify({"error": "Transcript too short to summarize"}), 400
+                
         except Exception as e:
+            app.logger.error(f"Transcript fetch failed: {str(e)}")
             return jsonify({"error": f"Transcript fetch failed: {str(e)}"}), 500
 
-        summarized_text = summarize_video_pipeline(transcript_text)
-        return jsonify({
-            "summarizedText": summarized_text,
-            "status": "success"
-        })
+        try:
+            app.logger.info("Starting summarization pipeline")
+            summarized_text = summarize_video_pipeline(transcript_text)
+            app.logger.info("Summarization completed successfully")
+            return jsonify({
+                "summarizedText": summarized_text,
+                "status": "success"
+            })
+        except Exception as e:
+            app.logger.error(f"Summarization pipeline failed: {str(e)}", exc_info=True)
+            return jsonify({
+                "error": f"Summarization failed: {str(e)}",
+                "status": "error"
+            }), 500
 
     except Exception as e:
+        app.logger.error(f"General request processing error: {str(e)}", exc_info=True)
         return jsonify({
             "error": str(e),
             "status": "error"
         }), 500
-
 @app.route('/answer-question', methods=['POST'])
 def answer_question():
     try:

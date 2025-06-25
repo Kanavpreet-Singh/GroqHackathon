@@ -132,7 +132,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://brieflensflask.onrender.com/answer-question",
+        "https://groqhackathon.onrender.com/answer-question",
         {
           summary: summary,
           question: question.trim()
@@ -185,7 +185,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://brieflensflask.onrender.com/detect-fake-news",
+        "https://groqhackathon.onrender.com/detect-fake-news",
         {
           text: summary
         },
