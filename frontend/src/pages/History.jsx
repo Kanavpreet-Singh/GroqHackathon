@@ -56,14 +56,11 @@ const History = () => {
                 className={`rounded-2xl shadow-lg border p-6 mb-8 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                   }`}
               >
-                {/* Circle Number */}
                 <h1 className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-200 text-xl font-bold text-blue-800 mb-4">
                   {index + 1}
                 </h1>
 
-                {/* Original Text or Video URL */}
                 <h2 className="text-2xl font-semibold mb-4 isDark:text-white">
-                {/* <span>❓</span> */}
                   { uh.originalText
                     ? uh.originalText.substring(0, 100) + (uh.originalText.length > 100 ? '...' : '')
                     : uh.videoUrl
@@ -71,12 +68,10 @@ const History = () => {
                       : 'Failure'}
                 </h2>
                   <br></br>
-                {/* Extracted Summary Heading */}
                 <h3 className="text-lg font-bold mb-2 text-black dark:text-white">
                   Extracted Summary:
                 </h3>
 
-                {/* Summary Content */}
                 <div className={`custom-html-content text-base leading-relaxed ${isDark ? 'dark-content' : 'light-content'}`}>
                   
                   <div
@@ -92,7 +87,6 @@ const History = () => {
 
       </div>
 
-      {/* Add a style tag to enforce text colors and sizes on all elements */}
       <style jsx global>{`
         .dark-theme .dark-content * {
           color: white !important;
