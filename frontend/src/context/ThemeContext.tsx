@@ -18,11 +18,9 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     setIsDark(!isDark);
   };
 
-  // Apply theme to the document when it changes
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add("dark-theme");
-      // Dark mode with green tones
       document.documentElement.style.setProperty("--background", "222 30% 10%"); // Dark green-gray
       document.documentElement.style.setProperty("--foreground", "90 15% 90%");
       document.documentElement.style.setProperty("--card", "220 25% 12%"); // Slightly lighter dark green
@@ -44,7 +42,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       document.documentElement.style.setProperty("--ring", "142 70% 45%");
     } else {
       document.documentElement.classList.remove("dark-theme");
-      // Light mode with subtle green undertones
       document.documentElement.style.setProperty("--background", "120 10% 98%"); // Very light green-white
       document.documentElement.style.setProperty("--foreground", "220 20% 20%");
       document.documentElement.style.setProperty("--card", "120 10% 96%"); // Light green-gray
