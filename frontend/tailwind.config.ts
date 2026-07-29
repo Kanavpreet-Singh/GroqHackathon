@@ -48,6 +48,10 @@ export default {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))'
         },
+        verified: {
+          DEFAULT: 'hsl(var(--verified))',
+          foreground: 'hsl(var(--verified-foreground))'
+        },
         popover: {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))'
@@ -67,12 +71,17 @@ export default {
           ring: 'hsl(var(--sidebar-ring))'
         },
         news: {
-          primary: '#9b87f5',
-          secondary: '#7E69AB',
-          accent: '#b8a9fa',
-          dark: '#1A1F2C',
-          light: '#403E43'
+          primary: 'hsl(var(--primary))',
+          secondary: 'hsl(var(--secondary))',
+          accent: 'hsl(var(--accent))',
+          dark: 'hsl(36 70% 42%)',
+          light: 'hsl(var(--muted))'
         }
+      },
+      fontFamily: {
+        display: ['"Newsreader"', 'serif'],
+        mono: ['"Space Mono"', 'monospace'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
       },
       borderRadius: {
         lg: 'var(--radius)',

@@ -11,15 +11,13 @@ const ThemeToggle = () => {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className={`w-10 h-10 rounded-full border shadow-md transition-colors duration-300 hover-glow ${
-        isDark ? "bg-green-200 border-green-500" : "bg-gray-900 border-gray-700"
-      }`}
+      className="w-10 h-10 rounded-full border border-border bg-secondary shadow-md transition-colors duration-300 hover-glow"
       title={isDark ? "Currently: Dark Mode" : "Currently: Light Mode"}
     >
       {isDark ? (
-        <Sun className="h-5 w-5 text-yellow-700" />
+        <Sun className="h-5 w-5 text-primary" />
       ) : (
-        <Moon className="h-5 w-5 text-white" />
+        <Moon className="h-5 w-5 text-primary" />
       )}
     </Button>
   );

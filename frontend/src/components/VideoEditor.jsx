@@ -2,28 +2,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
-import { Video, Sparkles, Copy, ExternalLink, Play, MessageCircle, Send, X, AlertTriangle } from "lucide-react";
+import { Video, Sparkles, Copy, MessageCircle, Send, X, AlertTriangle, Info, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { analyzeVideo } from "@/utils/api";
 import axios from "axios";
 import { BASE_URL, FLASK_BASE_URL } from "../helper";
+import { WireBadge } from "@/components/ui/wire-badge";
+import ApertureMark from "@/components/ApertureMark";
+
 const VideoEditor = ({ videoUrl, setVideoUrl }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState("");
+  const [languageInfo, setLanguageInfo] = useState(null);
+  const [analysisError, setAnalysisError] = useState(null);
   const [question, setQuestion] = useState("");
   const [qaHistory, setQaHistory] = useState([]);
   const [isQaSessionActive, setIsQaSessionActive] = useState(false);
   const [isCheckingFakeNews, setIsCheckingFakeNews] = useState(false);
   const [fakeNewsAnalysis, setFakeNewsAnalysis] = useState(null);
   const { toast } = useToast();
-
-  // Use useEffect to apply white color to the heading
-  // useEffect(() => {
-  //   const heading = document.querySelector(".video-analyzer-heading");
-  //   if (heading) {
-  //     heading.style.color = "#FFFFFF";
-  //   }
-  // }, []);
 
   const handleAnalyze = async () => {
     if (!videoUrl.trim()) {
@@ -37,6 +33,8 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
 
     // Clear previous analysis
     setSummary("");
+    setLanguageInfo(null);
+    setAnalysisError(null);
     setFakeNewsAnalysis(null);
     setQaHistory([]);
     setIsQaSessionActive(false);
@@ -64,6 +62,10 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
 
       if (summaryText) {
         setSummary(summaryText);
+        const detectedLanguage = response.data?.data?.detectedLanguage;
+        if (detectedLanguage && detectedLanguage.toLowerCase() !== "english") {
+          setLanguageInfo(detectedLanguage);
+        }
         toast({
           title: "Analysis complete",
           description: "The video was successfully summarized",
@@ -74,11 +76,28 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
 
     } catch (error) {
       console.error("Error analyzing video:", error);
-      toast({
-        title: "Analysis failed",
-        description: error.response?.data?.message || "Failed to summarize video",
-        variant: "destructive",
-      });
+      const errorCode = error.response?.data?.errorCode;
+      const message = error.response?.data?.message;
+
+      if (errorCode === "no_captions") {
+        setAnalysisError({
+          tone: "info",
+          title: "No captions on this video",
+          description: message || "This video doesn't have any captions available, so it can't be summarized. Try a video with subtitles enabled.",
+        });
+      } else if (errorCode === "video_unavailable") {
+        setAnalysisError({
+          tone: "info",
+          title: "Video unavailable",
+          description: message || "This video is unavailable — it may be private, deleted, or region-locked.",
+        });
+      } else {
+        setAnalysisError({
+          tone: "error",
+          title: "Analysis failed",
+          description: message || "Something went wrong while summarizing this video. Please try again.",
+        });
+      }
     } finally {
       setIsAnalyzing(false);
     }
@@ -91,15 +110,6 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
         title: "Copied!",
         description: "Summary copied to clipboard",
       });
-    }
-  };
-
-  const isValidUrl = (url) => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
     }
   };
 
@@ -245,12 +255,12 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
               />
               <Button
                 onClick={handleAnalyze}
-                className="bg-news-primary hover:bg-news-dark whitespace-nowrap flex items-center gap-2"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground whitespace-nowrap flex items-center gap-2"
                 disabled={isAnalyzing}
               >
                 {isAnalyzing ? (
                   <>
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    <ApertureMark spinning size={16} />
                     <span>Analyzing...</span>
                   </>
                 ) : (
@@ -262,36 +272,34 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
               </Button>
             </div>
           </div>
-
-          {/* {videoUrl && isValidUrl(videoUrl) && (
-            <div className="mt-6 border rounded-lg overflow-hidden bg-gray-100">
-              ...
-            </div>
-          )} */}
-          {/* {videoUrl && isValidUrl(videoUrl) && (
-            <div className="mt-6 border rounded-lg overflow-hidden bg-gray-100">
-              <div className="aspect-video relative flex items-center justify-center bg-gray-900">
-                <div className="text-white text-center">
-                  <Play className="h-16 w-16 mx-auto mb-2 opacity-70" />
-                  <p className="text-sm opacity-80">Video Player</p>
-                  <p className="text-xs mt-1 opacity-50 max-w-sm truncate">{videoUrl}</p>
-                </div>
-                <div className="absolute bottom-4 right-4">
-                  <a 
-                    href={videoUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-white/20 backdrop-blur-sm text-white text-xs rounded-full px-3 py-1 inline-flex items-center gap-1 hover:bg-white/30 transition-colors"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    <span>Open Video</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          )} */}
         </div>
       </div>
+
+      {analysisError && (
+        <div
+          className={`mb-6 rounded-xl border p-4 flex items-start gap-3 animate-fade-in ${
+            analysisError.tone === "info"
+              ? "border-primary/30 bg-primary/5"
+              : "border-destructive/30 bg-destructive/5"
+          }`}
+        >
+          {analysisError.tone === "info" ? (
+            <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+          ) : (
+            <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+          )}
+          <div className="flex-1">
+            <p className={`font-semibold ${analysisError.tone === "info" ? "text-primary" : "text-destructive"}`}>
+              {analysisError.title}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">{analysisError.description}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleAnalyze} className="flex items-center gap-1 shrink-0">
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Retry</span>
+          </Button>
+        </div>
+      )}
 
       {summary && (
         <>
@@ -317,7 +325,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
                 >
                   {isCheckingFakeNews ? (
                     <>
-                      <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                      <ApertureMark spinning size={16} className="text-primary" />
                       <span>Checking...</span>
                     </>
                   ) : (
@@ -329,6 +337,15 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
                 </Button>
               </div>
             </div>
+
+            {languageInfo && (
+              <div className="mb-4">
+                <WireBadge variant="info">
+                  <Info className="h-3 w-3" />
+                  Translated · {languageInfo} → English
+                </WireBadge>
+              </div>
+            )}
 
             <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
               <div
@@ -345,28 +362,26 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
                 <h2 className="text-xl font-semibold text-foreground">Fake News Analysis</h2>
               </div>
               <div className={`bg-muted p-6 rounded-xl shadow-md border ${
-                fakeNewsAnalysis.is_fake ? 'border-red-500' : 'border-green-500'
+                fakeNewsAnalysis.is_fake ? 'border-destructive/40' : 'border-verified/40'
               }`}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">Result:</span>
-                    <span className={`px-3 py-1 rounded-full text-sm ${
-                      fakeNewsAnalysis.is_fake ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                    }`}>
+                    <WireBadge variant={fakeNewsAnalysis.is_fake ? "flagged" : "verified"}>
                       {fakeNewsAnalysis.is_fake ? 'Likely Fake News' : 'Likely Real News'}
-                    </span>
+                    </WireBadge>
                   </div>
                   <div>
                     <span className="font-semibold">Confidence:</span>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                      <div 
+                    <div className="w-full bg-secondary rounded-full h-2.5 mt-2">
+                      <div
                         className={`h-2.5 rounded-full ${
-                          fakeNewsAnalysis.is_fake ? 'bg-red-500' : 'bg-green-500'
-                        }`} 
+                          fakeNewsAnalysis.is_fake ? 'bg-destructive' : 'bg-verified'
+                        }`}
                         style={{ width: `${fakeNewsAnalysis.confidence * 100}%` }}
                       ></div>
                     </div>
-                    <span className="text-sm text-gray-500">{Math.round(fakeNewsAnalysis.confidence * 100)}%</span>
+                    <span className="text-sm text-muted-foreground">{Math.round(fakeNewsAnalysis.confidence * 100)}%</span>
                   </div>
                   <div>
                     <span className="font-semibold">Reasons:</span>

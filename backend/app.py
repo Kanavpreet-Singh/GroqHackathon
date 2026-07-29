@@ -6,8 +6,13 @@ from langchain_core.documents import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field
-from youtube_transcript_api import YouTubeTranscriptApi
+from pydantic import BaseModel, Field
+from youtube_transcript_api import (
+    YouTubeTranscriptApi,
+    TranscriptsDisabled,
+    VideoUnavailable,
+    NoTranscriptFound,
+)
 import validators
 
 from flask_cors import CORS
@@ -41,37 +46,39 @@ def summarize_video_pipeline(original_text):
     if not original_text or not original_text.strip():
         raise ValueError("Empty input text provided")
 
-    # First, detect if the text is in Hindi
+    # Detect the primary language so we can transparently report and translate it
     language_detection_prompt = PromptTemplate(
         template="""
-        Analyze the following text and determine if it's primarily in Hindi or English.
-        Return only 'hindi' or 'english' as your response.
-        
+        Identify the primary language of the following text.
+        Respond with only the language's English name (e.g. "English", "Hindi", "Spanish", "French"). Nothing else.
+
         Text:
         {text}
         """,
         input_variables=["text"]
     )
-    
+
     language_chain = language_detection_prompt | llm
-    detected_language = language_chain.invoke({"text": original_text}).content.lower()
-    
-    # If the text is in Hindi, translate it to English first
-    if "hindi" in detected_language:
+    detected_language = language_chain.invoke({"text": original_text}).content.strip()
+
+    was_translated = False
+    # If the text isn't in English, translate it to English first
+    if "english" not in detected_language.lower():
         translation_prompt = PromptTemplate(
             template="""
-            Translate the following Hindi text to English. Maintain the original meaning and context.
+            Translate the following {language} text to English. Maintain the original meaning and context.
             Return only the English translation.
-            
-            Hindi text:
+
+            {language} text:
             {text}
             """,
-            input_variables=["text"]
+            input_variables=["text", "language"]
         )
-        
+
         translation_chain = translation_prompt | llm
-        original_text = translation_chain.invoke({"text": original_text}).content
-    
+        original_text = translation_chain.invoke({"text": original_text, "language": detected_language}).content
+        was_translated = True
+
     text_documents = [Document(page_content=original_text)]
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000, 
@@ -132,8 +139,12 @@ def summarize_video_pipeline(original_text):
     
     final_chain = final_prompt | llm
     final_summary = final_chain.invoke({"input": final_combined_summary})
-    
-    return final_summary.content
+
+    return {
+        "summary": final_summary.content,
+        "detectedLanguage": detected_language,
+        "wasTranslated": was_translated,
+    }
 
 @app.route("/")
 def home():
@@ -150,9 +161,11 @@ def summarize():
         if not original_text:
             return jsonify({"error": "Missing 'originalText' field"}), 400
 
-        summarized_text = summarize_video_pipeline(original_text)
+        pipeline_result = summarize_video_pipeline(original_text)
         return jsonify({
-            "summarizedText": summarized_text,
+            "summarizedText": pipeline_result["summary"],
+            "detectedLanguage": pipeline_result["detectedLanguage"],
+            "wasTranslated": pipeline_result["wasTranslated"],
             "status": "success"
         })
 
@@ -161,7 +174,7 @@ def summarize():
             "error": str(e),
             "status": "error"
         }), 500
-    
+
 def extract_video_id(url):
     if "youtube.com/watch?v=" in url:
         return url.split("v=")[1].split("&")[0]
@@ -185,39 +198,68 @@ def summarize_video():
         if not video_id:
             return jsonify({"error": "Could not extract video ID"}), 400
 
+        app.logger.info(f"Attempting to fetch transcript for video ID: {video_id}")
+        ytt_api = YouTubeTranscriptApi()
+
         try:
-            app.logger.info(f"Attempting to fetch transcript for video ID: {video_id}")
-            
-            # First try to get English transcript
-            try:
-                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-                app.logger.info("Successfully retrieved English transcript")
-            except Exception as e:
-                app.logger.warning(f"English transcript unavailable: {str(e)}")
-                # If English transcript not available, try Hindi
-                try:
-                    transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['hi'])
-                    app.logger.info("Successfully retrieved Hindi transcript")
-                except Exception as e2:
-                    app.logger.error(f"Hindi transcript also unavailable: {str(e2)}")
-                    return jsonify({"error": f"No transcripts available in supported languages: {str(e2)}"}), 404
-            
-            transcript_text = " ".join([t['text'] for t in transcript_list])
-            app.logger.info(f"Transcript length: {len(transcript_text)} characters")
-            
+            available_transcripts = ytt_api.list(video_id)
+        except TranscriptsDisabled:
+            return jsonify({
+                "error": "no_captions",
+                "message": "Captions are disabled for this video, so it can't be summarized. Try a video with captions/subtitles enabled."
+            }), 404
+        except VideoUnavailable:
+            return jsonify({
+                "error": "video_unavailable",
+                "message": "This video is unavailable (private, deleted, or region-locked)."
+            }), 404
+        except Exception as e:
+            app.logger.error(f"Failed to list transcripts: {str(e)}")
+            return jsonify({
+                "error": "no_captions",
+                "message": "Couldn't find any captions for this video, so it can't be summarized."
+            }), 404
+
+        # Prefer an English transcript; otherwise take whichever one is available
+        # (any language) and let the summarization pipeline translate it.
+        transcript = None
+        try:
+            transcript = available_transcripts.find_transcript(['en'])
+        except NoTranscriptFound:
+            pass
+
+        if transcript is None:
+            transcript = next(iter(available_transcripts), None)
+
+        if transcript is None:
+            return jsonify({
+                "error": "no_captions",
+                "message": "This video doesn't have any captions available, so it can't be summarized."
+            }), 404
+
+        caption_language = transcript.language
+
+        try:
+            fetched_transcript = transcript.fetch()
+            transcript_text = " ".join(snippet.text for snippet in fetched_transcript)
+            app.logger.info(f"Transcript length: {len(transcript_text)} characters ({caption_language})")
+
             if len(transcript_text) < 50:  # Arbitrary minimum length
                 return jsonify({"error": "Transcript too short to summarize"}), 400
-                
+
         except Exception as e:
             app.logger.error(f"Transcript fetch failed: {str(e)}")
             return jsonify({"error": f"Transcript fetch failed: {str(e)}"}), 500
 
         try:
             app.logger.info("Starting summarization pipeline")
-            summarized_text = summarize_video_pipeline(transcript_text)
+            pipeline_result = summarize_video_pipeline(transcript_text)
             app.logger.info("Summarization completed successfully")
             return jsonify({
-                "summarizedText": summarized_text,
+                "summarizedText": pipeline_result["summary"],
+                "detectedLanguage": pipeline_result["detectedLanguage"],
+                "wasTranslated": pipeline_result["wasTranslated"],
+                "captionLanguage": caption_language,
                 "status": "success"
             })
         except Exception as e:

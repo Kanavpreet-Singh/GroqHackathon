@@ -3,22 +3,22 @@ import bgImage from "./bgimage.jpg";
 import { useTheme } from "@/context/ThemeContext";
 import { TypeAnimation } from "react-type-animation";
 import ThreeDCard from "@/components/ThreeDCard";
-// import { ColourfulText } from '@/components/ui/colourful-text';
+import ApertureMark from "@/components/ApertureMark";
 
 const HomePage = () => {
   const { isDark } = useTheme();
 
-  const themeClasses = isDark ? "dark-theme bg-[#1a1a1a]" : "";
-
   return (
     <>
       {/* Desktop Layout */}
-      <main className={`hidden md:flex flex-col min-h-screen ${themeClasses}`}>
-        <div className="relative z-30 text-center px-6 py-16 max-w-4xl mx-auto">
+      <main className="hidden md:flex flex-col min-h-screen">
+        <div className="relative z-30 text-center px-6 py-20 max-w-4xl mx-auto focus-reveal">
+          <div className="flex items-center justify-center gap-2 mb-4 text-primary">
+            <ApertureMark size={16} />
+            <span className="font-mono-label">AI news desk · summarize · verify</span>
+          </div>
           <h1
-            className={`font-extrabold mb-4 ${
-              isDark ? "text-white" : "text-black"
-            }`}
+            className="font-display italic font-medium text-foreground mb-4"
             style={{
               fontSize: "clamp(2.5rem, 6vw, 5rem)",
               lineHeight: "1.1",
@@ -30,18 +30,11 @@ const HomePage = () => {
               speed={30}
               deletionSpeed={1}
               cursor={true}
-              style={{
-                display: "inline-block",
-                textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
-              }}
+              style={{ display: "inline-block" }}
               repeat={Infinity}
             />
           </h1>
-          <p
-            className={`text-xl md:text-2xl mb-8 font-bold ${
-              isDark ? "text-white" : "text-black"
-            }`}
-          >
+          <p className="text-xl md:text-2xl mb-8 text-muted-foreground">
             Quickly analyze and summarize news content from text, video, or
             audio sources
           </p>
@@ -54,31 +47,22 @@ const HomePage = () => {
               className="w-full h-full object-cover"
               style={{ maxHeight: "400px" }}
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
         </div>
         <div className="relative z-30 text-center px-6 py-16 max-w-4xl mx-auto">
+          <div className="font-mono-label text-primary mb-2">03 tools, one lens</div>
           <h2
-            className={`font-extrabold mb-2 mt-24 ${
-              isDark ? "text-white" : "text-black"
-            }`}
+            className="font-display text-foreground mb-2 mt-2 font-semibold"
             style={{
               fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
               lineHeight: "1.1",
-              textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
-              letterSpacing: "0.05em",
-              fontWeight: "700",
-              textTransform: "uppercase",
               position: "relative",
               paddingBottom: "0.5rem",
             }}
           >
             Our Features
-            <div
-              className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 ${
-                isDark ? "bg-white" : "bg-black"
-              }`}
-              style={{ borderRadius: "2px" }}
-            />
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-0.5 bg-primary rounded-full" />
           </h2>
           <div className="flex flex-row items-center justify-center gap-20 py-8 w-full">
             <ThreeDCard
@@ -101,16 +85,17 @@ const HomePage = () => {
       </main>
 
       {/* Mobile Layout */}
-      <main className={`flex md:hidden flex-col min-h-screen ${themeClasses}`}>
-        <div className="flex flex-col items-center justify-center text-center px-4 pt-12 pb-6">
+      <main className="flex md:hidden flex-col min-h-screen">
+        <div className="flex flex-col items-center justify-center text-center px-4 pt-12 pb-6 focus-reveal">
+          <div className="flex items-center justify-center gap-2 mb-3 text-primary">
+            <ApertureMark size={14} />
+            <span className="font-mono-label">AI news desk</span>
+          </div>
           <h1
-            className={`font-extrabold mb-4 ${
-              isDark ? "text-white" : "text-black"
-            }`}
+            className="font-display italic font-medium text-foreground mb-4"
             style={{
               fontSize: "clamp(3rem, 6vw, 4rem)",
               lineHeight: "1.1",
-              textShadow: "2px 2px 4px rgba(0,0,0,0.4)",
             }}
           >
             <TypeAnimation
@@ -119,18 +104,11 @@ const HomePage = () => {
               speed={30}
               deletionSpeed={1}
               cursor={true}
-              style={{
-                display: "inline-block",
-                textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
-              }}
+              style={{ display: "inline-block" }}
               repeat={Infinity}
             />
           </h1>
-          <p
-            className={`text-lg sm:text-xl font-bold ${
-              isDark ? "text-white" : "text-black"
-            }`}
-          >
+          <p className="text-lg sm:text-xl text-muted-foreground">
             Quickly analyze and summarize news content from text, video, or
             audio sources
           </p>
@@ -143,28 +121,18 @@ const HomePage = () => {
           />
         </div>
         <div className="relative z-30 text-center px-4 py-12 max-w-6xl mx-auto">
+          <div className="font-mono-label text-primary mb-2">03 tools, one lens</div>
           <h2
-            className={`font-extrabold mb-2 mt-8 ${
-              isDark ? "text-white" : "text-black"
-            }`}
+            className="font-display text-foreground mb-2 mt-2 font-semibold"
             style={{
               fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
               lineHeight: "1.1",
-              textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
-              letterSpacing: "0.05em",
-              fontWeight: "700",
-              textTransform: "uppercase",
               position: "relative",
               paddingBottom: "0.5rem",
             }}
           >
             Our Features
-            <div
-              className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 ${
-                isDark ? "bg-white" : "bg-black"
-              }`}
-              style={{ borderRadius: "2px" }}
-            />
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-0.5 bg-primary rounded-full" />
           </h2>
 
           <div className="flex flex-col items-center justify-center gap-8 mt-10">

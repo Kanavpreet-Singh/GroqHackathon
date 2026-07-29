@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,43 +28,6 @@ const Login = () => {
     },
   });
 
-  // In the signup form field section
-  <FormField
-    control={form.control}
-    name="age"
-    rules={{
-      required: "Age is required",
-      min: {
-        value: 13,
-        message: "You must be at least 13 years old"
-      },
-      max: {
-        value: 120,
-        message: "Please enter a valid age"
-      },
-      validate: (value) => {
-        const num = Number(value);
-        return Number.isInteger(num) || "Age must be a whole number";
-      }
-    }}
-    render={({ field }) => (
-      <FormItem>
-        <FormLabel>Age</FormLabel>
-        <FormControl>
-          <Input
-            type="number"
-            placeholder="Enter your age"
-            min={13}
-            max={120}
-            required
-            {...field}
-            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-          />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    )}
-  />
   const handleSubmitLogin = async () => {
     const values = form.getValues(); 
     setLoading(true);
@@ -156,13 +119,17 @@ const Login = () => {
                 <FormField
                   control={form.control}
                   name="name"
+                  rules={{
+                    required: "Name is required",
+                    minLength: { value: 5, message: "Name must be at least 5 characters" },
+                    maxLength: { value: 30, message: "Name must be under 30 characters" },
+                  }}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input 
+                        <Input
                           placeholder="Your name"
-                          required={!isLogin}
                           {...field}
                         />
                       </FormControl>
@@ -170,22 +137,29 @@ const Login = () => {
                     </FormItem>
                   )}
                 />
-                
+
               )}
                {!isLogin && (
                 <FormField
                 control={form.control}
                 name="age"
+                rules={{
+                  required: "Age is required",
+                  min: { value: 13, message: "You must be at least 13 years old" },
+                  max: { value: 120, message: "Please enter a valid age" },
+                  validate: (value) => Number.isInteger(Number(value)) || "Age must be a whole number",
+                }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Age</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-
-                        placeholder="Enter your age: "
-                        required
+                        placeholder="Enter your age"
+                        min={13}
+                        max={120}
                         {...field}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -197,6 +171,10 @@ const Login = () => {
               <FormField
                 control={form.control}
                 name="email"
+                rules={{
+                  required: "Email is required",
+                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Enter a valid email address" },
+                }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
@@ -204,7 +182,6 @@ const Login = () => {
                       <Input
                         type="email"
                         placeholder="your.email@example.com"
-                        required
                         {...field}
                       />
                     </FormControl>
@@ -212,19 +189,23 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-              
+
 
               <FormField
                 control={form.control}
                 name="password"
+                rules={{
+                  required: "Password is required",
+                  minLength: { value: isLogin ? 1 : 6, message: "Password must be at least 6 characters" },
+                  maxLength: { value: 10, message: "Password must be 10 characters or fewer" },
+                }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder=""
-                        required
+                        placeholder={isLogin ? "" : "6-10 characters"}
                         {...field}
                       />
                     </FormControl>
@@ -232,7 +213,7 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-              
+
 
               <Button
                 type="submit"

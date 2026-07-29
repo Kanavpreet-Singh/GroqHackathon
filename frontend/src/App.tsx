@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import History from "./pages/History";
 import LiveNews from "./pages/LiveNews";
+import ErrorBoundary from "./components/ErrorBoundary";
 // import 'bootstrap/dist/css/bootstrap.min.css'
 const queryClient = new QueryClient();
 
@@ -19,15 +20,17 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/livenews" element={<LiveNews />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <ErrorBoundary>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/livenews" element={<LiveNews />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </ErrorBoundary>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>

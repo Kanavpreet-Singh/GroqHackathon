@@ -1,14 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
-import { FileText, Sparkles, Copy, Send, X, MessageCircle, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { FileText, Sparkles, Copy, Send, X, MessageCircle, AlertTriangle, Info, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { analyzeText } from "@/utils/api";
 import axios from "axios"
 import { BASE_URL, FLASK_BASE_URL } from "../helper";
+import { WireBadge } from "@/components/ui/wire-badge";
+import ApertureMark from "@/components/ApertureMark";
+
 const TextEditor = ({ text, setText }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState("");
+  const [languageInfo, setLanguageInfo] = useState(null);
+  const [analysisError, setAnalysisError] = useState(null);
   const [question, setQuestion] = useState("");
   const [qaHistory, setQaHistory] = useState([]);
   const [isQaSessionActive, setIsQaSessionActive] = useState(false);
@@ -16,13 +20,6 @@ const TextEditor = ({ text, setText }) => {
   const [fakeNewsAnalysis, setFakeNewsAnalysis] = useState(null);
   const { toast } = useToast();
 
-  // Use useEffect to apply white color to the heading
-  // useEffect(() => {
-  //   const heading = document.querySelector('.text-analyzer-heading');
-  //   if (heading) {
-  //     heading.style.color = '#FFFFFF';
-  //   }
-  // }, []);
   const handleAnalyze = async () => {
     if (!text.trim()) {
       toast({
@@ -35,6 +32,8 @@ const TextEditor = ({ text, setText }) => {
 
     // Clear previous analysis
     setSummary("");
+    setLanguageInfo(null);
+    setAnalysisError(null);
     setFakeNewsAnalysis(null);
     setQaHistory([]);
     setIsQaSessionActive(false);
@@ -63,6 +62,10 @@ const TextEditor = ({ text, setText }) => {
 
       if (summaryText) {
         setSummary(summaryText);
+        const detectedLanguage = response.data?.data?.detectedLanguage;
+        if (detectedLanguage && detectedLanguage.toLowerCase() !== "english") {
+          setLanguageInfo(detectedLanguage);
+        }
         toast({
           title: "Analysis complete",
           description: "The text was successfully summarized",
@@ -73,10 +76,9 @@ const TextEditor = ({ text, setText }) => {
 
     } catch (error) {
       console.error("Error analyzing text:", error);
-      toast({
+      setAnalysisError({
         title: "Analysis failed",
-        description: error.response?.data?.message || "Failed to summarize text",
-        variant: "destructive",
+        description: error.response?.data?.message || "Something went wrong while summarizing this text. Please try again.",
       });
     } finally {
       setIsAnalyzing(false);
@@ -236,7 +238,7 @@ const TextEditor = ({ text, setText }) => {
             >
               {isAnalyzing ? (
                 <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <ApertureMark spinning size={16} />
                   <span>Analyzing...</span>
                 </>
               ) : (
@@ -249,6 +251,20 @@ const TextEditor = ({ text, setText }) => {
           </div>
         </div>
       </div>
+
+      {analysisError && (
+        <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3 animate-fade-in">
+          <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-destructive">{analysisError.title}</p>
+            <p className="text-sm text-muted-foreground mt-1">{analysisError.description}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleAnalyze} className="flex items-center gap-1 shrink-0">
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Retry</span>
+          </Button>
+        </div>
+      )}
 
       {summary && (
         <>
@@ -274,7 +290,7 @@ const TextEditor = ({ text, setText }) => {
                 >
                   {isCheckingFakeNews ? (
                     <>
-                      <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                      <ApertureMark spinning size={16} className="text-primary" />
                       <span>Checking...</span>
                     </>
                   ) : (
@@ -286,6 +302,15 @@ const TextEditor = ({ text, setText }) => {
                 </Button>
               </div>
             </div>
+
+            {languageInfo && (
+              <div className="mb-4">
+                <WireBadge variant="info">
+                  <Info className="h-3 w-3" />
+                  Translated · {languageInfo} → English
+                </WireBadge>
+              </div>
+            )}
 
             <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
               <div
@@ -302,28 +327,26 @@ const TextEditor = ({ text, setText }) => {
                 <h2 className="text-xl font-semibold text-foreground">Fake News Analysis</h2>
               </div>
               <div className={`bg-muted p-6 rounded-xl shadow-md border ${
-                fakeNewsAnalysis.is_fake ? 'border-red-500' : 'border-green-500'
+                fakeNewsAnalysis.is_fake ? 'border-destructive/40' : 'border-verified/40'
               }`}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">Result:</span>
-                    <span className={`px-3 py-1 rounded-full text-sm ${
-                      fakeNewsAnalysis.is_fake ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                    }`}>
+                    <WireBadge variant={fakeNewsAnalysis.is_fake ? "flagged" : "verified"}>
                       {fakeNewsAnalysis.is_fake ? 'Likely Fake News' : 'Likely Real News'}
-                    </span>
+                    </WireBadge>
                   </div>
                   <div>
                     <span className="font-semibold">Confidence:</span>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                      <div 
+                    <div className="w-full bg-secondary rounded-full h-2.5 mt-2">
+                      <div
                         className={`h-2.5 rounded-full ${
-                          fakeNewsAnalysis.is_fake ? 'bg-red-500' : 'bg-green-500'
-                        }`} 
+                          fakeNewsAnalysis.is_fake ? 'bg-destructive' : 'bg-verified'
+                        }`}
                         style={{ width: `${fakeNewsAnalysis.confidence * 100}%` }}
                       ></div>
                     </div>
-                    <span className="text-sm text-gray-500">{Math.round(fakeNewsAnalysis.confidence * 100)}%</span>
+                    <span className="text-sm text-muted-foreground">{Math.round(fakeNewsAnalysis.confidence * 100)}%</span>
                   </div>
                   <div>
                     <span className="font-semibold">Reasons:</span>

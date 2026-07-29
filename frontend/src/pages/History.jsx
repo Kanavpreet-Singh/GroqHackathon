@@ -3,26 +3,37 @@ import Header from '../components/Header';
 import axios from 'axios';
 import { useTheme } from "@/context/ThemeContext";
 import { BASE_URL } from '../helper';
-BASE_URL
+import ApertureMark from '@/components/ApertureMark';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, RotateCcw } from 'lucide-react';
+
 const History = () => {
   const [userhistory, setUserHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { isDark } = useTheme();
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const history = await axios.get(`${BASE_URL}/user/history`, {
-          headers: {
-            token: localStorage.getItem('token'),
-          },
-        });
-        console.log(history.data);
-        setUserHistory(history.data);
-      } catch (error) {
-        console.error('Error fetching history:', error);
-      }
-    };
+  const fetchHistory = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const history = await axios.get(`${BASE_URL}/user/history`, {
+        headers: {
+          token: localStorage.getItem('token'),
+        },
+      });
+      setUserHistory(history.data);
+    } catch (err) {
+      console.error('Error fetching history:', err);
+      setError(
+        err.response?.data?.message || "Couldn't load your history right now. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchHistory();
   }, []);
   const processHtmlContent = (htmlContent) => {
@@ -43,24 +54,38 @@ const History = () => {
     <div className={`min-h-screen ${isDark ? 'dark-theme' : ''}`}>
       <Header />
       <div className="max-w-4xl mx-auto px-4 py-6">
-        <h1 className="text-4xl font-bold mb-6 text-center text-black dark:text-white">Your History</h1>
+        <h1 className="text-4xl font-bold mb-6 text-center text-foreground">Your History</h1>
 
-        {userhistory.length === 0 ? (
-          <p className="text-center text-lg text-black dark:text-white">No history found.</p>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+            <ApertureMark spinning size={32} />
+            <p>Loading your history...</p>
+          </div>
+        ) : error ? (
+          <div className="max-w-md mx-auto rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+            <AlertTriangle className="h-6 w-6 text-destructive mx-auto mb-2" />
+            <p className="text-destructive font-semibold mb-1">Couldn't load history</p>
+            <p className="text-sm text-muted-foreground mb-4">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchHistory} className="inline-flex items-center gap-1">
+              <RotateCcw className="h-3.5 w-3.5" />
+              Retry
+            </Button>
+          </div>
+        ) : userhistory.length === 0 ? (
+          <p className="text-center text-lg text-foreground">No history found.</p>
         ) : (
           userhistory
             .filter(uh => uh.videoUrl || uh.originalText)
             .map((uh, index) => (
               <div
                 key={index}
-                className={`rounded-2xl shadow-lg border p-6 mb-8 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                  }`}
+                className="rounded-2xl shadow-lg border border-border bg-card p-6 mb-8 transition-all duration-300"
               >
-                <h1 className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-200 text-xl font-bold text-blue-800 mb-4">
+                <h1 className="w-12 h-12 flex items-center justify-center rounded-full bg-primary/10 border border-primary/30 font-mono text-lg font-bold text-primary mb-4">
                   {index + 1}
                 </h1>
 
-                <h2 className="text-2xl font-semibold mb-4 isDark:text-white">
+                <h2 className="text-2xl font-semibold mb-4 text-foreground">
                   { uh.originalText
                     ? uh.originalText.substring(0, 100) + (uh.originalText.length > 100 ? '...' : '')
                     : uh.videoUrl

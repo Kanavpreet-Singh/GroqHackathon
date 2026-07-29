@@ -38,23 +38,29 @@ router.post("/text", userAuth, async (req, res) => {
         }
 
         // Call Flask summarization service
-        let summarizedText;
+        let flaskResponse;
         try {
-            const response = await axios.post(
+            flaskResponse = await axios.post(
                 FLASK_API_URL,
                 { originalText: originalText || transcription },
                 { timeout: FLASK_API_TIMEOUT }
             );
 
-            if (!response.data || !response.data.summarizedText) {
+            if (!flaskResponse.data || !flaskResponse.data.summarizedText) {
                 throw new Error('Invalid response format from summarization service');
             }
-            summarizedText = response.data.summarizedText;
         } catch (flaskError) {
-            console.error('Summarization service error:', flaskError);
-            // Fallback to truncated original text if summarization fails
-            summarizedText = (originalText || transcription).substring(0, 500) + '... [Summary failed]';
+            const flaskData = flaskError.response?.data;
+            console.error('Summarization service error:', flaskData || flaskError.message);
+            const upstreamStatus = flaskError.response?.status;
+            return res.status(upstreamStatus && upstreamStatus < 500 ? upstreamStatus : 502).json({
+                success: false,
+                errorCode: flaskData?.error,
+                message: flaskData?.message || "Couldn't summarize this content right now. Please try again."
+            });
         }
+
+        const summarizedText = flaskResponse.data.summarizedText;
 
         // Save to database
         if (inputType === 'audio') {
@@ -80,13 +86,15 @@ router.post("/text", userAuth, async (req, res) => {
                 inputType: newsItem.inputType,
                 status: newsItem.status,
                 summary: newsItem.summarizedText,
+                detectedLanguage: flaskResponse.data.detectedLanguage,
+                wasTranslated: flaskResponse.data.wasTranslated,
                 createdAt: newsItem.createdAt
             }
         });
 
     } catch (err) {
         console.error("Error in news summary endpoint:", err);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             message: "Internal server error",
             error: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -95,7 +103,7 @@ router.post("/text", userAuth, async (req, res) => {
 });
 
 
-const FLASK_VIDEO_API_URL = "https://groqhackathon-1.onrender.com/summarize-video";
+const FLASK_VIDEO_API_URL = process.env.FLASK_VIDEO_API_URL || 'https://groqhackathon-1.onrender.com/summarize-video';
 
 router.post("/video", userAuth, async (req, res) => {
     try {
@@ -118,25 +126,30 @@ router.post("/video", userAuth, async (req, res) => {
         }
 
         // Call Flask video summarization service
-        let summarizedText, transcription;
+        let flaskResponse;
         try {
-            const response = await axios.post(
+            flaskResponse = await axios.post(
                 FLASK_VIDEO_API_URL,
                 { videoUrl },
                 { timeout: FLASK_API_TIMEOUT }
             );
 
-            if (!response.data || !response.data.summarizedText) {
+            if (!flaskResponse.data || !flaskResponse.data.summarizedText) {
                 throw new Error("Invalid response format from summarization service");
             }
-
-            summarizedText = response.data.summarizedText;
-            // Optional: assign transcription if your Flask API returns transcript too
-            transcription = response.data.transcription || "[Transcript not available]";
         } catch (flaskError) {
-            console.error("Flask video summarization error:", flaskError);
-            summarizedText = "Summary failed. Please try again later.";
+            const flaskData = flaskError.response?.data;
+            console.error("Flask video summarization error:", flaskData || flaskError.message);
+            const upstreamStatus = flaskError.response?.status;
+            return res.status(upstreamStatus && upstreamStatus < 500 ? upstreamStatus : 502).json({
+                success: false,
+                errorCode: flaskData?.error,
+                message: flaskData?.message || "Couldn't summarize this video right now. Please try again."
+            });
         }
+
+        const summarizedText = flaskResponse.data.summarizedText;
+        const transcription = flaskResponse.data.transcription || "[Transcript not available]";
 
         // Save to database
         const newsItem = new News({
@@ -144,7 +157,7 @@ router.post("/video", userAuth, async (req, res) => {
             inputType,
             videoUrl,
             originalText: null,
-            transcription: transcription || null,
+            transcription,
             summarizedText,
             status: status || 'completed'
         });
@@ -159,6 +172,9 @@ router.post("/video", userAuth, async (req, res) => {
                 inputType: newsItem.inputType,
                 status: newsItem.status,
                 summary: newsItem.summarizedText,
+                detectedLanguage: flaskResponse.data.detectedLanguage,
+                wasTranslated: flaskResponse.data.wasTranslated,
+                captionLanguage: flaskResponse.data.captionLanguage,
                 createdAt: newsItem.createdAt
             }
         });
