@@ -7,7 +7,7 @@ const News = require("../models/news");
 const userAuth = require("../middlewares/authentication/user");
 const path = require("path");
 // Configuration constants
-const FLASK_API_URL = process.env.FLASK_API_URL || 'https://brieflensflask.onrender.com/summarize';
+const FLASK_API_URL = process.env.FLASK_API_URL || 'https://groqhackathon-1.onrender.com/summarize';
 const FLASK_API_TIMEOUT = parseInt(process.env.FLASK_API_TIMEOUT) || 30000; // 30 seconds
 
 router.post("/text", userAuth, async (req, res) => {
@@ -95,7 +95,7 @@ router.post("/text", userAuth, async (req, res) => {
 });
 
 
-const FLASK_VIDEO_API_URL = "https://brieflensflask.onrender.com/summarize-video"; 
+const FLASK_VIDEO_API_URL = "https://groqhackathon-1.onrender.com/summarize-video";
 
 router.post("/video", userAuth, async (req, res) => {
     try {
