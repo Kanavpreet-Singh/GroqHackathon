@@ -259,21 +259,26 @@ const AudioEditor = () => {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="mb-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Mic className="h-5 w-5 text-news-primary" />
-          <h2 className="text-xl font-semibold text-foreground dark:text-white">Audio Analyzer</h2>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 border border-primary/30 text-primary shrink-0">
+            <Mic className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="font-mono-label text-primary">Input · Audio</div>
+            <h2 className="text-xl font-display font-semibold text-foreground">Audio Analyzer</h2>
+          </div>
         </div>
-        <div className="content-card">
+        <div className="content-card border-t-2 border-t-primary">
           <div className="mb-4">
             <label className="block text-sm font-medium text-foreground mb-1">
-              Upload Audio File
+              Upload an audio file <span className="text-muted-foreground font-normal">(max 25MB)</span>
             </label>
             <div className="flex space-x-2 items-center">
               <Input
                 type="file"
                 accept="audio/*"
                 onChange={handleFileChange}
-                className="flex-1"
+                className="flex-1 bg-background/50 focus-visible:ring-primary"
               />
               <Button
                 onClick={handleAnalyze}
@@ -317,7 +322,7 @@ const AudioEditor = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">
+                <h2 className="text-xl font-display font-semibold text-foreground">
                   Generated Summary
                 </h2>
               </div>
@@ -357,7 +362,7 @@ const AudioEditor = () => {
               </div>
             )}
 
-            <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
+            <div className="bg-muted p-6 rounded-xl shadow-md border border-border border-l-4 border-l-primary">
               <div
                 className="prose text-foreground dark:prose-invert max-w-none"
                 dangerouslySetInnerHTML={{ __html: summary }}
@@ -369,7 +374,7 @@ const AudioEditor = () => {
             <div className="mt-8 mb-6">
               <div className="flex items-center space-x-2 mb-4">
                 <AlertTriangle className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Fake News Analysis</h2>
+                <h2 className="text-xl font-display font-semibold text-foreground">Fake News Analysis</h2>
               </div>
               <div className={`bg-muted p-6 rounded-xl shadow-md border ${
                 fakeNewsAnalysis.is_fake ? 'border-destructive/40' : 'border-verified/40'
@@ -419,7 +424,7 @@ const AudioEditor = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <MessageCircle className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Interactive Q&A Session</h2>
+                <h2 className="text-xl font-display font-semibold text-foreground">Interactive Q&A Session</h2>
               </div>
               {!isQaSessionActive ? (
                 <Button

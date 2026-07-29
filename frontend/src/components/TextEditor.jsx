@@ -213,11 +213,16 @@ const TextEditor = ({ text, setText }) => {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="mb-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <FileText className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold text-foreground dark:text-white">Text Analyzer</h2>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 border border-primary/30 text-primary shrink-0">
+            <FileText className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="font-mono-label text-primary">Input · Text</div>
+            <h2 className="text-xl font-display font-semibold text-foreground">Text Analyzer</h2>
+          </div>
         </div>
-        <div className="content-card bg-card p-6 rounded-xl shadow-md border border-border">
+        <div className="content-card border-t-2 border-t-primary">
           <div className="mb-4">
             <label htmlFor="textarea" className="block text-sm font-medium text-foreground mb-1">
               Paste or type your text content
@@ -227,13 +232,13 @@ const TextEditor = ({ text, setText }) => {
               placeholder="Enter news content to be summarized..."
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="min-h-[200px] text-foreground"
+              className="min-h-[200px] text-foreground bg-background/50 focus-visible:ring-primary"
             />
           </div>
           <div className="flex justify-end">
             <Button
               onClick={handleAnalyze}
-              className="bg-primary hover:bg-primary/80 flex items-center gap-2"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
               disabled={isAnalyzing}
             >
               {isAnalyzing ? (
@@ -272,7 +277,7 @@ const TextEditor = ({ text, setText }) => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">
+                <h2 className="text-xl font-display font-semibold text-foreground">
                   Generated Summary
                 </h2>
               </div>
@@ -281,10 +286,10 @@ const TextEditor = ({ text, setText }) => {
                   <Copy className="h-4 w-4" />
                   <span>Copy</span>
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleFakeNewsCheck} 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleFakeNewsCheck}
                   className="flex items-center gap-1"
                   disabled={isCheckingFakeNews}
                 >
@@ -312,7 +317,7 @@ const TextEditor = ({ text, setText }) => {
               </div>
             )}
 
-            <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
+            <div className="bg-muted p-6 rounded-xl shadow-md border border-border border-l-4 border-l-primary">
               <div
                 className="prose text-foreground dark:prose-invert max-w-none"
                 dangerouslySetInnerHTML={{ __html: summary }}
@@ -324,7 +329,7 @@ const TextEditor = ({ text, setText }) => {
             <div className="mt-8 mb-6">
               <div className="flex items-center space-x-2 mb-4">
                 <AlertTriangle className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Fake News Analysis</h2>
+                <h2 className="text-xl font-display font-semibold text-foreground">Fake News Analysis</h2>
               </div>
               <div className={`bg-muted p-6 rounded-xl shadow-md border ${
                 fakeNewsAnalysis.is_fake ? 'border-destructive/40' : 'border-verified/40'
@@ -374,7 +379,7 @@ const TextEditor = ({ text, setText }) => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <MessageCircle className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Interactive Q&A Session</h2>
+                <h2 className="text-xl font-display font-semibold text-foreground">Interactive Q&A Session</h2>
               </div>
               {!isQaSessionActive ? (
                 <Button
