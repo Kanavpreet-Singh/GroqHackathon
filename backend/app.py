@@ -36,8 +36,8 @@ CORS(app, resources={r"/*": {"origins": [
 
 
 def summarize_video_pipeline(original_text):
-    llm = ChatGroq(model="Gemma2-9b-It", temperature=0.3)
-    
+    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.3)
+
     if not original_text or not original_text.strip():
         raise ValueError("Empty input text provided")
 
@@ -247,7 +247,7 @@ def answer_question():
             return jsonify({"error": "Missing 'summary' or 'question' field"}), 400
 
         # Using a more capable model with higher temperature for more creative responses
-        llm = ChatGroq(model="Gemma2-9b-It", temperature=0.9)
+        llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.9)
         parser = JsonOutputParser(pydantic_object=QuestionAnswer)
         
         prompt = PromptTemplate(
@@ -332,7 +332,7 @@ def detect_fake_news():
         if not text:
             return jsonify({"error": "Missing 'text' field"}), 400
 
-        llm = ChatGroq(model="Gemma2-9b-It", temperature=0.3)
+        llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.3)
         parser = JsonOutputParser(pydantic_object=FakeNewsAnalysis)
         
         prompt = PromptTemplate(

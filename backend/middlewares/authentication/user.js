@@ -3,18 +3,18 @@ require('dotenv').config();
  const userAuth=async(req,res,next)=>{
     let token=req.headers.token
     if(!token){
-        return res.json({message:"you are not signed in"})
-    }
-    let check = jwt.verify(token,process.env.JWT_SECRET)
-
-    if(check) {
-        req.user = { userid: check.userid };
-        next()
-    }
-    else {
-        return res.json({message:"you are not signed in"})
+        return res.status(401).json({message:"you are not signed in"})
     }
 
+    let check
+    try {
+        check = jwt.verify(token,process.env.JWT_SECRET)
+    } catch (err) {
+        return res.status(401).json({message:"you are not signed in"})
+    }
+
+    req.user = { userid: check.userid };
+    next()
 }
 
 module.exports=userAuth

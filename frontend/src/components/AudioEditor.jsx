@@ -7,7 +7,7 @@ import { Mic, Sparkles, Copy, Volume2, Play, Pause, MessageCircle, Send, X, Aler
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios"
 import { analyzeAudio } from "@/utils/api";
-import { BASE_URL } from "../helper";
+import { BASE_URL, FLASK_BASE_URL } from "../helper";
 const AudioEditor = () => {
   const [audioFile, setAudioFile] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -163,7 +163,7 @@ const AudioEditor = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://groqhackathon.onrender.com/answer-question",
+        `${FLASK_BASE_URL}/answer-question`,
         {
           summary: summary,
           question: question.trim()
@@ -216,7 +216,7 @@ const AudioEditor = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://groqhackathon.onrender.com/detect-fake-news",
+        `${FLASK_BASE_URL}/detect-fake-news`,
         {
           text: summary
         },

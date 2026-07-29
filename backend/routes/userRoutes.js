@@ -13,7 +13,7 @@ router.post('/signup',async (req,res)=>{
     const reqBody=z.object({
         firstname:z.string().min(5).max(30),
         email:z.string().email(),
-        password:z.string().max(10),
+        password:z.string().min(6).max(72),
         age:z.number()
     })
 

@@ -5,7 +5,7 @@ import { FileText, Sparkles, Copy, Send, X, MessageCircle, AlertTriangle } from 
 import { useToast } from "@/hooks/use-toast";
 import { analyzeText } from "@/utils/api";
 import axios from "axios"
-import { BASE_URL } from "../helper";
+import { BASE_URL, FLASK_BASE_URL } from "../helper";
 const TextEditor = ({ text, setText }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState("");
@@ -121,7 +121,7 @@ const TextEditor = ({ text, setText }) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://groqhackathon.onrender.com/answer-question",
+        `${FLASK_BASE_URL}/answer-question`,
         {
           summary: summary,
           question: question.trim()
@@ -176,7 +176,7 @@ const TextEditor = ({ text, setText }) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://groqhackathon.onrender.com/detect-fake-news",
+        `${FLASK_BASE_URL}/detect-fake-news`,
         {
           text: summary
         },

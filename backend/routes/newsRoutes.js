@@ -172,17 +172,17 @@ router.post("/video", userAuth, async (req, res) => {
         });
     }
 });
-const { AssemblyAI } = require('assemblyai');
 const fs = require('fs');
 const multer=require("multer")
+const FormData = require('form-data');
 
-// Initialize AssemblyAI client
-const client = new AssemblyAI({
-  apiKey: process.env.ASSEMBLYAI_API_KEY || '6491c189bb4b4f9fb9aa8ac8f340ab62'
-});
+if (!process.env.GROQ_API_KEY) {
+  throw new Error('GROQ_API_KEY environment variable is required');
+}
+const GROQ_TRANSCRIPTION_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
 
 /**
- * Transcribes audio file using AssemblyAI SDK
+ * Transcribes audio file using Groq's Whisper API
  * @param {string} filePath - Path to audio file
  * @param {number} maxRetries - Maximum retry attempts
  * @param {number} initialDelay - Initial retry delay in ms
@@ -195,22 +195,22 @@ const transcribeAudio = async (filePath, maxRetries = 3, initialDelay = 1000) =>
 
   while (retryCount < maxRetries) {
     try {
-      const params = {
-        audio: filePath
-      };
+      const form = new FormData();
+      form.append('file', fs.createReadStream(filePath));
+      form.append('model', 'whisper-large-v3-turbo');
 
-      const transcript = await client.transcripts.transcribe(params);
+      const response = await axios.post(GROQ_TRANSCRIPTION_URL, form, {
+        headers: {
+          ...form.getHeaders(),
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+      });
 
-      if (transcript.status === 'error') {
-        throw new Error(transcript.error);
+      if (!response.data?.text) {
+        throw new Error('Transcription completed but no text returned');
       }
 
-      // Poll for completion if not already done
-      if (transcript.status !== 'completed') {
-        return await pollTranscriptStatus(transcript.id);
-      }
-
-      return transcript.text;
+      return response.data.text;
     } catch (error) {
       lastError = error;
       retryCount++;
@@ -230,35 +230,6 @@ const transcribeAudio = async (filePath, maxRetries = 3, initialDelay = 1000) =>
     }
   }
   throw lastError || new Error('Transcription failed after retries');
-};
-
-/**
- * Polls transcript status until completion
- * @param {string} transcriptId - Transcript ID
- * @returns {Promise<string>} - Completed transcription text
- */
-const pollTranscriptStatus = async (transcriptId) => {
-  const maxPollingAttempts = 60; // 5 minutes max (60 attempts * 5 seconds)
-  
-  for (let attempt = 1; attempt <= maxPollingAttempts; attempt++) {
-    const transcript = await client.transcripts.get(transcriptId);
-
-    if (transcript.status === 'completed') {
-      if (!transcript.text) {
-        throw new Error('Transcription completed but no text returned');
-      }
-      return transcript.text;
-      
-    }
-
-    if (transcript.status === 'error') {
-      throw new Error(transcript.error || 'Transcription failed');
-    }
-
-    await sleep(5000); // Wait 5 seconds between checks
-  }
-
-  throw new Error('Transcription timeout - took too long to complete');
 };
 
 // Helper function
