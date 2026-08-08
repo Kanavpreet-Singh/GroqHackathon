@@ -95,7 +95,12 @@ router.post("/text", userAuth, async (req, res) => {
 });
 
 
-const FLASK_VIDEO_API_URL = "https://brieflensflask.onrender.com/summarize-video"; 
+const FLASK_VIDEO_API_URL = process.env.FLASK_VIDEO_API_URL || 'https://brieflensflask.onrender.com/summarize-video';
+// Video summarization involves fetching a transcript plus several LLM calls (more for
+// longer videos, via map-reduce), which routinely takes well past 30s — and longer
+// still on a cold-started free-tier dyno. Tune via env if the hosting platform allows
+// longer-lived connections.
+const FLASK_VIDEO_API_TIMEOUT = parseInt(process.env.FLASK_VIDEO_API_TIMEOUT) || 180000; // 3 minutes
 
 router.post("/video", userAuth, async (req, res) => {
     try {
@@ -110,41 +115,75 @@ router.post("/video", userAuth, async (req, res) => {
             });
         }
 
-        if (!videoUrl) {
+        if (!videoUrl || typeof videoUrl !== 'string') {
             return res.status(400).json({
                 success: false,
                 message: "Video URL is required"
             });
         }
 
-        // Call Flask video summarization service
-        let summarizedText, transcription;
         try {
-            const response = await axios.post(
-                FLASK_VIDEO_API_URL,
-                { videoUrl },
-                { timeout: FLASK_API_TIMEOUT }
-            );
-
-            if (!response.data || !response.data.summarizedText) {
-                throw new Error("Invalid response format from summarization service");
-            }
-
-            summarizedText = response.data.summarizedText;
-            // Optional: assign transcription if your Flask API returns transcript too
-            transcription = response.data.transcription || "[Transcript not available]";
-        } catch (flaskError) {
-            console.error("Flask video summarization error:", flaskError);
-            summarizedText = "Summary failed. Please try again later.";
+            new URL(videoUrl);
+        } catch {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide a valid video URL"
+            });
         }
 
-        // Save to database
+        // Call Flask video summarization service
+        let flaskResponse;
+        try {
+            flaskResponse = await axios.post(
+                FLASK_VIDEO_API_URL,
+                { videoUrl },
+                { timeout: FLASK_VIDEO_API_TIMEOUT }
+            );
+        } catch (flaskError) {
+            console.error("Flask video summarization error:", flaskError.message);
+
+            if (flaskError.code === 'ECONNABORTED') {
+                return res.status(504).json({
+                    success: false,
+                    message: "The video summarization service took too long to respond. This can happen with long videos or right after the service has been idle — please try again shortly."
+                });
+            }
+
+            if (flaskError.response) {
+                // Forward the specific reason the Flask service gave (invalid URL,
+                // no captions available, video unavailable, rate-limited, etc.)
+                const upstreamStatus = flaskError.response.status;
+                const message = flaskError.response.data?.error || "Failed to summarize video";
+                return res.status(upstreamStatus >= 400 && upstreamStatus < 500 ? upstreamStatus : 502).json({
+                    success: false,
+                    message
+                });
+            }
+
+            return res.status(503).json({
+                success: false,
+                message: "The video summarization service is currently unavailable. Please try again later."
+            });
+        }
+
+        if (!flaskResponse.data || !flaskResponse.data.summarizedText) {
+            return res.status(502).json({
+                success: false,
+                message: "Received an invalid response from the summarization service"
+            });
+        }
+
+        const summarizedText = flaskResponse.data.summarizedText;
+        const transcription = flaskResponse.data.transcription || null;
+
+        // Only persist a record once we actually have a successful summary —
+        // a failed attempt has nothing useful to store and shouldn't clutter history.
         const newsItem = new News({
             userId,
             inputType,
             videoUrl,
             originalText: null,
-            transcription: transcription || null,
+            transcription,
             summarizedText,
             status: status || 'completed'
         });

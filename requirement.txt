@@ -3,7 +3,8 @@ flask-cors
 python-dotenv
 langchain
 langchain-groq
-youtube-transcript-api
+youtube-transcript-api>=1.2.4
+yt-dlp
 googlesearch-python
 validators
 requests

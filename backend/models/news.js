@@ -25,7 +25,7 @@ const newsSchema = new mongoose.Schema({
   },
   transcription: {
     type: String,
-    required:true
+    default: null
   },
   status: {
     type: String,

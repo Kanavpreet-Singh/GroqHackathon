@@ -21,7 +21,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   // Apply theme to the document when it changes
   useEffect(() => {
     if (isDark) {
-      document.documentElement.classList.add("dark-theme");
+      // Tailwind's `darkMode: ["class"]` looks specifically for a `dark` class —
+      // this was previously named "dark-theme", which matched nothing, so every
+      // `dark:` utility class in the app was silently inert.
+      document.documentElement.classList.add("dark");
       // Dark mode with green tones
       document.documentElement.style.setProperty("--background", "222 30% 10%"); // Dark green-gray
       document.documentElement.style.setProperty("--foreground", "90 15% 90%");
@@ -43,7 +46,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       document.documentElement.style.setProperty("--input", "220 25% 20%");
       document.documentElement.style.setProperty("--ring", "142 70% 45%");
     } else {
-      document.documentElement.classList.remove("dark-theme");
+      document.documentElement.classList.remove("dark");
       // Light mode with subtle green undertones
       document.documentElement.style.setProperty("--background", "120 10% 98%"); // Very light green-white
       document.documentElement.style.setProperty("--foreground", "220 20% 20%");

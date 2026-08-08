@@ -1,20 +1,50 @@
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 import os
+from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlparse, parse_qs
 from langchain_groq import ChatGroq
 from langchain_core.documents import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
-from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api import (
+    YouTubeTranscriptApi,
+    TranscriptsDisabled,
+    NoTranscriptFound,
+    VideoUnavailable,
+    VideoUnplayable,
+    AgeRestricted,
+    RequestBlocked,
+    IpBlocked,
+    InvalidVideoId,
+)
 import validators
+import yt_dlp
+import json
 
 from flask_cors import CORS
 from googlesearch import search
 import requests
 from bs4 import BeautifulSoup
 import re
+
+# Hard ceiling on transcript size — this is the "truly out of bounds" cutoff, not a
+# quality trade-off. ~300k characters is roughly a 5-6 hour continuous-speech video,
+# comfortably covering long lectures/podcasts. Beyond this we fail fast with a clear
+# error instead of grinding through hours of sequential/parallel LLM calls.
+MAX_TRANSCRIPT_CHARS = 300000
+
+# Once the running summary shrinks below this, it's small enough to safely hand to
+# the final HTML-formatting LLM call in one shot.
+REDUCE_TARGET_CHARS = 6000
+MAX_REDUCE_ROUNDS = 5
+
+# Gemma2-9b-It (previously used throughout this file) has been decommissioned by
+# Groq and now fails every request with a 400 model_decommissioned error — this
+# was silently breaking every LLM call in the video/QA/fake-news pipelines.
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 class Summary(BaseModel):
     summary: str = Field(description="The generated summary")
@@ -31,69 +61,107 @@ class FakeNewsAnalysis(BaseModel):
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": [
     "http://localhost:8080",
+    "http://localhost:8081",
     "https://brieflensnews.onrender.com"
 ]}})
 
 
-def summarize_video_pipeline(original_text):
-    llm = ChatGroq(model="Gemma2-9b-It", temperature=0.3)
-    
-    if not original_text or not original_text.strip():
-        raise ValueError("Empty input text provided")
+def _split_text(text, chunk_size=1000, chunk_overlap=200):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        length_function=len
+    )
+    return splitter.split_documents([Document(page_content=text)])
 
-    # First, detect if the text is in Hindi
-    language_detection_prompt = PromptTemplate(
+
+def _translate_to_english(text, llm):
+    """Translates arbitrary-language text to English, chunk-by-chunk and in
+    parallel. Works for any source language since it relies on the LLM's general
+    translation ability rather than a fixed list of supported languages. Chunks
+    that fail to translate fall back to their original text rather than being
+    dropped, so a single bad chunk can't sink the whole transcript."""
+    translation_prompt = PromptTemplate(
         template="""
-        Analyze the following text and determine if it's primarily in Hindi or English.
-        Return only 'hindi' or 'english' as your response.
-        
+        Translate the following text to English. Preserve the original meaning,
+        tone, and factual content as closely as possible. Return only the
+        English translation with no extra commentary.
+
         Text:
         {text}
         """,
         input_variables=["text"]
     )
-    
-    language_chain = language_detection_prompt | llm
-    detected_language = language_chain.invoke({"text": original_text}).content.lower()
-    
-    # If the text is in Hindi, translate it to English first
-    if "hindi" in detected_language:
-        translation_prompt = PromptTemplate(
-            template="""
-            Translate the following Hindi text to English. Maintain the original meaning and context.
-            Return only the English translation.
-            
-            Hindi text:
-            {text}
-            """,
-            input_variables=["text"]
-        )
-        
-        translation_chain = translation_prompt | llm
-        original_text = translation_chain.invoke({"text": original_text}).content
-    
-    text_documents = [Document(page_content=original_text)]
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000, 
-        chunk_overlap=200,
-        length_function=len
-    )
-    documents = text_splitter.split_documents(text_documents)
-    
+    translation_chain = translation_prompt | llm
+
+    def translate_chunk(doc):
+        try:
+            return translation_chain.invoke({"text": doc.page_content}).content
+        except Exception:
+            return doc.page_content
+
+    docs = _split_text(text, chunk_size=3000, chunk_overlap=0)
+    with ThreadPoolExecutor(max_workers=min(6, len(docs))) as executor:
+        translated_parts = list(executor.map(translate_chunk, docs))
+    return " ".join(translated_parts)
+
+
+def _map_summarize(text, chain):
+    """One map pass: split text into chunks and summarize each chunk in
+    parallel. Used both for the initial transcript and, recursively, for
+    reducing an over-long combined summary — this is what lets arbitrarily
+    long transcripts be summarized without truncating any content."""
+    documents = _split_text(text)
     if not documents:
         raise ValueError("No documents created after splitting")
 
+    def summarize_chunk(chunk):
+        try:
+            result = chain.invoke({"input_text": chunk.page_content})
+            return result
+        except Exception:
+            return {"summary": chunk.page_content[:500] + "..."}
+
+    with ThreadPoolExecutor(max_workers=min(6, len(documents))) as executor:
+        partial_summaries = list(executor.map(summarize_chunk, documents))
+    return " ".join(item['summary'] for item in partial_summaries)
+
+
+def summarize_video_pipeline(original_text):
+    llm = ChatGroq(model=GROQ_MODEL, temperature=0.3)
+
+    if not original_text or not original_text.strip():
+        raise ValueError("Empty input text provided")
+
+    # Detect language from a sample only — the whole transcript can be huge and
+    # language doesn't need the full text to identify.
+    language_detection_prompt = PromptTemplate(
+        template="""
+        Identify the primary language of the following text. Respond with only
+        the language name in English (for example: English, Hindi, Spanish,
+        French, Japanese).
+
+        Text:
+        {text}
+        """,
+        input_variables=["text"]
+    )
+    language_chain = language_detection_prompt | llm
+    detected_language = language_chain.invoke({"text": original_text[:3000]}).content.strip().lower()
+
+    if "english" not in detected_language:
+        original_text = _translate_to_english(original_text, llm)
+
     parser = JsonOutputParser(pydantic_object=Summary)
-    
     prompt = PromptTemplate(
         template="""
-        You are a professional summarization assistant. 
+        You are a professional summarization assistant.
         Generate a JSON-formatted summary of the following text chunk.
         The output MUST contain only JSON with a 'summary' field.
-        
+
         Text chunk:
         {input_text}
-        
+
         {format_instructions}
         """,
         input_variables=["input_text"],
@@ -101,18 +169,19 @@ def summarize_video_pipeline(original_text):
             "format_instructions": parser.get_format_instructions()
         },
     )
-    
     chain = prompt | llm | parser
 
-    def summarize_chunk(chunk):
-        try:
-            result = chain.invoke({"input_text": chunk.page_content})
-            return result
-        except Exception as e:
-            return {"summary": chunk.page_content[:500] + "..."}
-
-    partial_summaries = [summarize_chunk(c) for c in documents]
-    final_combined_summary = " ".join(item['summary'] for item in partial_summaries)
+    # Map, then recursively reduce: repeatedly re-summarize the combined
+    # summary until it's short enough to format in one final pass. This lets
+    # transcripts of any length converge to a fixed-size final input instead
+    # of being truncated. MAX_REDUCE_ROUNDS is just a safety valve against a
+    # pathological case where summaries stop shrinking.
+    combined_summary = _map_summarize(original_text, chain)
+    rounds = 0
+    while len(combined_summary) > REDUCE_TARGET_CHARS and rounds < MAX_REDUCE_ROUNDS:
+        combined_summary = _map_summarize(combined_summary, chain)
+        rounds += 1
+    final_combined_summary = combined_summary
 
     # Final formatting
     final_prompt = ChatPromptTemplate.from_messages([
@@ -129,10 +198,10 @@ def summarize_video_pipeline(original_text):
          - Make sure the output is valid HTML"""),
         ("user", "{input}")
     ])
-    
+
     final_chain = final_prompt | llm
     final_summary = final_chain.invoke({"input": final_combined_summary})
-    
+
     return final_summary.content
 
 @app.route("/")
@@ -162,75 +231,196 @@ def summarize():
             "status": "error"
         }), 500
     
+_VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+_YOUTUBE_HOSTS = {"youtube.com", "m.youtube.com", "music.youtube.com", "youtube-nocookie.com"}
+
+
 def extract_video_id(url):
-    if "youtube.com/watch?v=" in url:
-        return url.split("v=")[1].split("&")[0]
-    elif "youtu.be/" in url:
-        return url.split("youtu.be/")[1].split("?")[0]
-    else:
+    """Extracts an 11-char YouTube video ID from any common URL shape:
+    watch?v=, youtu.be/, /shorts/, /embed/, /live/, on youtube.com,
+    m.youtube.com, music.youtube.com, or the nocookie embed domain."""
+    try:
+        parsed = urlparse(url)
+    except Exception:
         return None
-    
+
+    host = (parsed.hostname or "").lower()
+    if host.startswith("www."):
+        host = host[4:]
+
+    candidate = None
+    if host == "youtu.be":
+        candidate = parsed.path.lstrip("/").split("/")[0]
+    elif host in _YOUTUBE_HOSTS:
+        if parsed.path == "/watch":
+            candidate = parse_qs(parsed.query).get("v", [None])[0]
+        else:
+            for prefix in ("/shorts/", "/embed/", "/live/"):
+                if parsed.path.startswith(prefix):
+                    candidate = parsed.path[len(prefix):].split("/")[0]
+                    break
+
+    if candidate and _VIDEO_ID_RE.match(candidate):
+        return candidate
+    return None
+
+
+def fetch_youtube_transcript(video_id):
+    """Fetches a transcript in any available language, returning
+    (transcript_text, language_code, was_translated_by_youtube). Preference
+    order: manually-created English > auto-generated English > any transcript
+    YouTube can translate to English > the first available transcript as-is
+    (the summarization pipeline will detect its language and translate it).
+    Raises the underlying youtube_transcript_api exception on total failure so
+    the caller can map it to a specific, honest error message."""
+    ytt_api = YouTubeTranscriptApi()
+    transcript_list = ytt_api.list(video_id)
+    available = list(transcript_list)
+
+    if not available:
+        raise NoTranscriptFound(video_id, [], transcript_list)
+
+    def fetch_text(transcript_obj):
+        fetched = transcript_obj.fetch()
+        return " ".join(snippet.text for snippet in fetched)
+
+    manual_en = next((t for t in available if t.language_code.startswith("en") and not t.is_generated), None)
+    if manual_en:
+        return fetch_text(manual_en), manual_en.language_code, False
+
+    auto_en = next((t for t in available if t.language_code.startswith("en")), None)
+    if auto_en:
+        return fetch_text(auto_en), auto_en.language_code, False
+
+    for t in available:
+        if t.is_translatable:
+            try:
+                translated = t.translate("en")
+                return fetch_text(translated), t.language_code, True
+            except Exception:
+                continue
+
+    # No English transcript and no translatable one — take whatever exists in
+    # its native language; summarize_video_pipeline() will translate it.
+    fallback = available[0]
+    return fetch_text(fallback), fallback.language_code, False
+
+
+def fetch_youtube_transcript_ytdlp(video_id):
+    """Second-line transcript source, tried only when youtube_transcript_api
+    fails. yt-dlp is a separately-maintained extractor (much larger contributor
+    base, typically patched within hours of a YouTube-side change) with its own
+    request/client patterns, so its failure modes don't fully correlate with
+    youtube_transcript_api's — this exists purely to raise availability, not to
+    replace the primary source. Returns (transcript_text, language_code)."""
+    url = f"https://www.youtube.com/watch?v={video_id}"
+    ydl_opts = {"skip_download": True, "quiet": True, "no_warnings": True}
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        subs = info.get("subtitles") or {}
+        autosubs = info.get("automatic_captions") or {}
+
+        def pick_english(tracks):
+            if "en" in tracks:
+                return "en", tracks["en"]
+            for lang, fmts in tracks.items():
+                if lang.startswith("en"):
+                    return lang, fmts
+            return None, None
+
+        lang, track = pick_english(subs)
+        if track is None:
+            lang, track = pick_english(autosubs)
+        if track is None and subs:
+            lang, track = next(iter(subs.items()))
+        if track is None and autosubs:
+            lang, track = next(iter(autosubs.items()))
+        if track is None:
+            raise RuntimeError("yt-dlp found no caption tracks for this video")
+
+        fmt = next((f for f in track if f.get("ext") == "json3"), track[0])
+        raw = ydl.urlopen(fmt["url"]).read()
+        data = json.loads(raw)
+        text_parts = [
+            seg["utf8"]
+            for event in data.get("events", [])
+            for seg in (event.get("segs") or [])
+            if seg.get("utf8")
+        ]
+        text = "".join(text_parts).replace("\n", " ").strip()
+        if not text:
+            raise RuntimeError("yt-dlp returned an empty transcript")
+        return text, lang
+
+
 @app.route('/summarize-video', methods=['POST'])
 def summarize_video():
+    data = request.get_json(silent=True)
+    if not data or 'videoUrl' not in data:
+        return jsonify({"error": "Missing 'videoUrl' field"}), 400
+
+    url = data['videoUrl']
+    if not isinstance(url, str) or not validators.url(url):
+        return jsonify({"error": "Please provide a valid video URL"}), 400
+
+    video_id = extract_video_id(url)
+    if not video_id:
+        return jsonify({"error": "Could not recognize a YouTube video ID in that URL. Only YouTube links are currently supported."}), 400
+
     try:
-        data = request.get_json()
-        if not data or 'videoUrl' not in data:
-            return jsonify({"error": "Missing 'videoUrl' field"}), 400
-
-        url = data['videoUrl']
-        if not validators.url(url):
-            return jsonify({"error": "Invalid URL"}), 400
-
-        video_id = extract_video_id(url)
-        if not video_id:
-            return jsonify({"error": "Could not extract video ID"}), 400
-
+        app.logger.info(f"Fetching transcript for video ID: {video_id}")
         try:
-            app.logger.info(f"Attempting to fetch transcript for video ID: {video_id}")
-            
-            # First try to get English transcript
+            transcript_text, source_lang, was_translated = fetch_youtube_transcript(video_id)
+            app.logger.info(f"Transcript fetched via youtube_transcript_api: {len(transcript_text)} chars, source language '{source_lang}', youtube_translated={was_translated}")
+        except Exception as primary_error:
+            app.logger.warning(f"youtube_transcript_api failed ({type(primary_error).__name__}: {primary_error}); trying yt-dlp fallback")
             try:
-                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-                app.logger.info("Successfully retrieved English transcript")
-            except Exception as e:
-                app.logger.warning(f"English transcript unavailable: {str(e)}")
-                # If English transcript not available, try Hindi
-                try:
-                    transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['hi'])
-                    app.logger.info("Successfully retrieved Hindi transcript")
-                except Exception as e2:
-                    app.logger.error(f"Hindi transcript also unavailable: {str(e2)}")
-                    return jsonify({"error": f"No transcripts available in supported languages: {str(e2)}"}), 404
-            
-            transcript_text = " ".join([t['text'] for t in transcript_list])
-            app.logger.info(f"Transcript length: {len(transcript_text)} characters")
-            
-            if len(transcript_text) < 50:  # Arbitrary minimum length
-                return jsonify({"error": "Transcript too short to summarize"}), 400
-                
-        except Exception as e:
-            app.logger.error(f"Transcript fetch failed: {str(e)}")
-            return jsonify({"error": f"Transcript fetch failed: {str(e)}"}), 500
-
-        try:
-            app.logger.info("Starting summarization pipeline")
-            summarized_text = summarize_video_pipeline(transcript_text)
-            app.logger.info("Summarization completed successfully")
-            return jsonify({
-                "summarizedText": summarized_text,
-                "status": "success"
-            })
-        except Exception as e:
-            app.logger.error(f"Summarization pipeline failed: {str(e)}", exc_info=True)
-            return jsonify({
-                "error": f"Summarization failed: {str(e)}",
-                "status": "error"
-            }), 500
-
+                transcript_text, source_lang = fetch_youtube_transcript_ytdlp(video_id)
+                app.logger.info(f"Transcript fetched via yt-dlp fallback: {len(transcript_text)} chars, source language '{source_lang}'")
+            except Exception as fallback_error:
+                app.logger.warning(f"yt-dlp fallback also failed: {fallback_error}")
+                # Surface the primary source's error, since its exception types map to
+                # specific, honest messages below — yt-dlp's are just generic failures.
+                raise primary_error
+    except TranscriptsDisabled:
+        return jsonify({"error": "Captions are disabled for this video, so it can't be summarized."}), 404
+    except NoTranscriptFound:
+        return jsonify({"error": "No captions are available for this video in any language."}), 404
+    except (VideoUnavailable, VideoUnplayable):
+        return jsonify({"error": "This video is unavailable (private, deleted, or region-locked)."}), 400
+    except AgeRestricted:
+        return jsonify({"error": "This video is age-restricted, and its captions can't be accessed."}), 400
+    except InvalidVideoId:
+        return jsonify({"error": "That doesn't look like a valid YouTube video ID."}), 400
+    except (RequestBlocked, IpBlocked):
+        app.logger.warning(f"YouTube blocked transcript request for {video_id}")
+        return jsonify({"error": "YouTube is temporarily blocking transcript requests from our server. Please try again in a few minutes."}), 503
     except Exception as e:
-        app.logger.error(f"General request processing error: {str(e)}", exc_info=True)
+        app.logger.error(f"Transcript fetch failed: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Transcript fetch failed: {str(e)}"}), 500
+
+    if len(transcript_text.strip()) < 50:
+        return jsonify({"error": "Transcript too short to summarize"}), 400
+
+    if len(transcript_text) > MAX_TRANSCRIPT_CHARS:
         return jsonify({
-            "error": str(e),
+            "error": f"This video's transcript is too long to summarize in one request ({len(transcript_text):,} characters, limit {MAX_TRANSCRIPT_CHARS:,}). Try a shorter video or an excerpt."
+        }), 413
+
+    try:
+        app.logger.info("Starting summarization pipeline")
+        summarized_text = summarize_video_pipeline(transcript_text)
+        app.logger.info("Summarization completed successfully")
+        return jsonify({
+            "summarizedText": summarized_text,
+            "transcription": transcript_text,
+            "status": "success"
+        })
+    except Exception as e:
+        app.logger.error(f"Summarization pipeline failed: {str(e)}", exc_info=True)
+        return jsonify({
+            "error": f"Summarization failed: {str(e)}",
             "status": "error"
         }), 500
 @app.route('/answer-question', methods=['POST'])
@@ -247,7 +437,7 @@ def answer_question():
             return jsonify({"error": "Missing 'summary' or 'question' field"}), 400
 
         # Using a more capable model with higher temperature for more creative responses
-        llm = ChatGroq(model="Gemma2-9b-It", temperature=0.9)
+        llm = ChatGroq(model=GROQ_MODEL, temperature=0.9)
         parser = JsonOutputParser(pydantic_object=QuestionAnswer)
         
         prompt = PromptTemplate(
@@ -332,7 +522,7 @@ def detect_fake_news():
         if not text:
             return jsonify({"error": "Missing 'text' field"}), 400
 
-        llm = ChatGroq(model="Gemma2-9b-It", temperature=0.3)
+        llm = ChatGroq(model=GROQ_MODEL, temperature=0.3)
         parser = JsonOutputParser(pydantic_object=FakeNewsAnalysis)
         
         prompt = PromptTemplate(

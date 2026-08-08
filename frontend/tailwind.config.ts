@@ -3,10 +3,10 @@ import type { Config } from "tailwindcss";
 export default {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
+    "./pages/**/*.{ts,tsx,js,jsx}",
+    "./components/**/*.{ts,tsx,js,jsx}",
+    "./app/**/*.{ts,tsx,js,jsx}",
+    "./src/**/*.{ts,tsx,js,jsx}",
   ],
   prefix: "",
   theme: {
@@ -23,48 +23,52 @@ export default {
     },
     extend: {
       colors: {
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        // The `<alpha-value>` placeholder is required for Tailwind's color-opacity
+        // modifiers (e.g. `bg-secondary/50`) to generate any CSS at all — without it,
+        // `/NN` opacity suffixes on these tokens silently produce no rule, which was
+        // leaving inputs and hover states with no background applied whatsoever.
+        border: 'hsl(var(--border) / <alpha-value>)',
+        input: 'hsl(var(--input) / <alpha-value>)',
+        ring: 'hsl(var(--ring) / <alpha-value>)',
+        background: 'hsl(var(--background) / <alpha-value>)',
+        foreground: 'hsl(var(--foreground) / <alpha-value>)',
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))'
+          DEFAULT: 'hsl(var(--primary) / <alpha-value>)',
+          foreground: 'hsl(var(--primary-foreground) / <alpha-value>)'
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))'
+          DEFAULT: 'hsl(var(--secondary) / <alpha-value>)',
+          foreground: 'hsl(var(--secondary-foreground) / <alpha-value>)'
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))'
+          DEFAULT: 'hsl(var(--destructive) / <alpha-value>)',
+          foreground: 'hsl(var(--destructive-foreground) / <alpha-value>)'
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))'
+          DEFAULT: 'hsl(var(--muted) / <alpha-value>)',
+          foreground: 'hsl(var(--muted-foreground) / <alpha-value>)'
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))'
+          DEFAULT: 'hsl(var(--accent) / <alpha-value>)',
+          foreground: 'hsl(var(--accent-foreground) / <alpha-value>)'
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))'
+          DEFAULT: 'hsl(var(--popover) / <alpha-value>)',
+          foreground: 'hsl(var(--popover-foreground) / <alpha-value>)'
         },
         card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))'
+          DEFAULT: 'hsl(var(--card) / <alpha-value>)',
+          foreground: 'hsl(var(--card-foreground) / <alpha-value>)'
         },
         sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))'
+          DEFAULT: 'hsl(var(--sidebar-background) / <alpha-value>)',
+          foreground: 'hsl(var(--sidebar-foreground) / <alpha-value>)',
+          primary: 'hsl(var(--sidebar-primary) / <alpha-value>)',
+          'primary-foreground': 'hsl(var(--sidebar-primary-foreground) / <alpha-value>)',
+          accent: 'hsl(var(--sidebar-accent) / <alpha-value>)',
+          'accent-foreground': 'hsl(var(--sidebar-accent-foreground) / <alpha-value>)',
+          border: 'hsl(var(--sidebar-border) / <alpha-value>)',
+          ring: 'hsl(var(--sidebar-ring) / <alpha-value>)'
         },
         news: {
           primary: '#9b87f5',
@@ -109,32 +113,28 @@ export default {
         'slide-in': 'slide-in 0.3s ease-out',
         'fade-in': 'fade-in 0.4s ease-out'
       },
-      typography: (theme) => ({
-        DEFAULT: {
-          css: {
-            color: theme('colors.foreground'),
-            h1: { color: theme('colors.foreground') },
-            h2: { color: theme('colors.foreground') },
-            h3: { color: theme('colors.foreground') },
-            h4: { color: theme('colors.foreground') },
-            strong: { color: theme('colors.foreground') },
-            a: { color: theme('colors.primary.DEFAULT') },
-            code: { color: theme('colors.foreground') },
-          },
-        },
-        invert: {
-          css: {
-            color: theme('colors.foreground'),
-            h1: { color: theme('colors.foreground') },
-            h2: { color: theme('colors.foreground') },
-            h3: { color: theme('colors.foreground') },
-            h4: { color: theme('colors.foreground') },
-            strong: { color: theme('colors.foreground') },
-            a: { color: theme('colors.primary.DEFAULT') },
-            code: { color: theme('colors.foreground') },
-          },
-        },
-      }),
+      typography: () => {
+        // Plugin-authored CSS via theme('colors.x') doesn't run through Tailwind's
+        // own `<alpha-value>` substitution (that only happens for its built-in
+        // color utilities), so these reference the CSS variables directly instead
+        // of going through the alpha-aware color tokens above.
+        const foreground = 'hsl(var(--foreground))';
+        const primary = 'hsl(var(--primary))';
+        const proseColors = {
+          color: foreground,
+          h1: { color: foreground },
+          h2: { color: foreground },
+          h3: { color: foreground },
+          h4: { color: foreground },
+          strong: { color: foreground },
+          a: { color: primary },
+          code: { color: foreground },
+        };
+        return {
+          DEFAULT: { css: proseColors },
+          invert: { css: proseColors },
+        };
+      },
     }
   },
   plugins: [require("tailwindcss-animate"),require('@tailwindcss/typography'),],

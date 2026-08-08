@@ -6,7 +6,7 @@ import { Video, Sparkles, Copy, ExternalLink, Play, MessageCircle, Send, X, Aler
 import { useToast } from "@/hooks/use-toast";
 import { analyzeVideo } from "@/utils/api";
 import axios from "axios";
-import { BASE_URL } from "../helper";
+import { BASE_URL, FLASK_BASE_URL } from "../helper";
 const VideoEditor = ({ videoUrl, setVideoUrl }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState("");
@@ -132,7 +132,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://groqhackathon.onrender.com/answer-question",
+        `${FLASK_BASE_URL}/answer-question`,
         {
           summary: summary,
           question: question.trim()
@@ -185,7 +185,7 @@ const VideoEditor = ({ videoUrl, setVideoUrl }) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://groqhackathon.onrender.com/detect-fake-news",
+        `${FLASK_BASE_URL}/detect-fake-news`,
         {
           text: summary
         },

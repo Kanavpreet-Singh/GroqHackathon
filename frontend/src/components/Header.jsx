@@ -32,7 +32,7 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
   };
 
   return (
-    <header className="relative z-10 bg-pink-100 border-b border-border shadow-sm">
+    <header className="relative z-10 bg-card border-b border-border shadow-sm">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -47,7 +47,7 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
                   className="h-8 w-8 object-contain"
                 />
               </div>
-              <h1 className="text-xl font-bold text-foreground hidden sm:block text-black">
+              <h1 className="text-xl font-bold text-foreground hidden sm:block">
                 BriefLens
               </h1>
             </div>
