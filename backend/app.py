@@ -8,7 +8,7 @@ from langchain_core.documents import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from youtube_transcript_api import (
     YouTubeTranscriptApi,
     TranscriptsDisabled,
@@ -75,28 +75,28 @@ def _split_text(text, chunk_size=1000, chunk_overlap=200):
     return splitter.split_documents([Document(page_content=text)])
 
 
-def _translate_to_english(text, llm):
+def _translate_to_english(text, llm, source_language):
     """Translates arbitrary-language text to English, chunk-by-chunk and in
-    parallel. Works for any source language since it relies on the LLM's general
-    translation ability rather than a fixed list of supported languages. Chunks
-    that fail to translate fall back to their original text rather than being
-    dropped, so a single bad chunk can't sink the whole transcript."""
+    parallel. Naming the detected source language in the prompt (rather than
+    leaving the model to infer it) measurably improves translation quality.
+    Chunks that fail to translate fall back to their original text rather than
+    being dropped, so a single bad chunk can't sink the whole transcript."""
     translation_prompt = PromptTemplate(
         template="""
-        Translate the following text to English. Preserve the original meaning,
-        tone, and factual content as closely as possible. Return only the
-        English translation with no extra commentary.
+        Translate the following {language} text to English. Maintain the
+        original meaning and context. Return only the English translation
+        with no extra commentary.
 
-        Text:
+        {language} text:
         {text}
         """,
-        input_variables=["text"]
+        input_variables=["text", "language"]
     )
     translation_chain = translation_prompt | llm
 
     def translate_chunk(doc):
         try:
-            return translation_chain.invoke({"text": doc.page_content}).content
+            return translation_chain.invoke({"text": doc.page_content, "language": source_language}).content
         except Exception:
             return doc.page_content
 
@@ -138,8 +138,8 @@ def summarize_video_pipeline(original_text):
     language_detection_prompt = PromptTemplate(
         template="""
         Identify the primary language of the following text. Respond with only
-        the language name in English (for example: English, Hindi, Spanish,
-        French, Japanese).
+        the language's English name (e.g. "English", "Hindi", "Spanish",
+        "French", "Japanese"). Nothing else.
 
         Text:
         {text}
@@ -147,10 +147,12 @@ def summarize_video_pipeline(original_text):
         input_variables=["text"]
     )
     language_chain = language_detection_prompt | llm
-    detected_language = language_chain.invoke({"text": original_text[:3000]}).content.strip().lower()
+    detected_language = language_chain.invoke({"text": original_text[:3000]}).content.strip()
 
-    if "english" not in detected_language:
-        original_text = _translate_to_english(original_text, llm)
+    was_translated = False
+    if "english" not in detected_language.lower():
+        original_text = _translate_to_english(original_text, llm, detected_language)
+        was_translated = True
 
     parser = JsonOutputParser(pydantic_object=Summary)
     prompt = PromptTemplate(
@@ -202,7 +204,11 @@ def summarize_video_pipeline(original_text):
     final_chain = final_prompt | llm
     final_summary = final_chain.invoke({"input": final_combined_summary})
 
-    return final_summary.content
+    return {
+        "summary": final_summary.content,
+        "detectedLanguage": detected_language,
+        "wasTranslated": was_translated,
+    }
 
 @app.route("/")
 def home():
@@ -219,9 +225,11 @@ def summarize():
         if not original_text:
             return jsonify({"error": "Missing 'originalText' field"}), 400
 
-        summarized_text = summarize_video_pipeline(original_text)
+        pipeline_result = summarize_video_pipeline(original_text)
         return jsonify({
-            "summarizedText": summarized_text,
+            "summarizedText": pipeline_result["summary"],
+            "detectedLanguage": pipeline_result["detectedLanguage"],
+            "wasTranslated": pipeline_result["wasTranslated"],
             "status": "success"
         })
 
@@ -230,7 +238,7 @@ def summarize():
             "error": str(e),
             "status": "error"
         }), 500
-    
+
 _VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _YOUTUBE_HOSTS = {"youtube.com", "m.youtube.com", "music.youtube.com", "youtube-nocookie.com"}
 
@@ -358,21 +366,21 @@ def fetch_youtube_transcript_ytdlp(video_id):
 def summarize_video():
     data = request.get_json(silent=True)
     if not data or 'videoUrl' not in data:
-        return jsonify({"error": "Missing 'videoUrl' field"}), 400
+        return jsonify({"error": "missing_field", "message": "Missing 'videoUrl' field"}), 400
 
     url = data['videoUrl']
     if not isinstance(url, str) or not validators.url(url):
-        return jsonify({"error": "Please provide a valid video URL"}), 400
+        return jsonify({"error": "invalid_url", "message": "Please provide a valid video URL"}), 400
 
     video_id = extract_video_id(url)
     if not video_id:
-        return jsonify({"error": "Could not recognize a YouTube video ID in that URL. Only YouTube links are currently supported."}), 400
+        return jsonify({"error": "invalid_url", "message": "Could not recognize a YouTube video ID in that URL. Only YouTube links are currently supported."}), 400
 
     try:
         app.logger.info(f"Fetching transcript for video ID: {video_id}")
         try:
-            transcript_text, source_lang, was_translated = fetch_youtube_transcript(video_id)
-            app.logger.info(f"Transcript fetched via youtube_transcript_api: {len(transcript_text)} chars, source language '{source_lang}', youtube_translated={was_translated}")
+            transcript_text, source_lang, _ = fetch_youtube_transcript(video_id)
+            app.logger.info(f"Transcript fetched via youtube_transcript_api: {len(transcript_text)} chars, source language '{source_lang}'")
         except Exception as primary_error:
             app.logger.warning(f"youtube_transcript_api failed ({type(primary_error).__name__}: {primary_error}); trying yt-dlp fallback")
             try:
@@ -384,45 +392,51 @@ def summarize_video():
                 # specific, honest messages below — yt-dlp's are just generic failures.
                 raise primary_error
     except TranscriptsDisabled:
-        return jsonify({"error": "Captions are disabled for this video, so it can't be summarized."}), 404
+        return jsonify({"error": "no_captions", "message": "Captions are disabled for this video, so it can't be summarized."}), 404
     except NoTranscriptFound:
-        return jsonify({"error": "No captions are available for this video in any language."}), 404
+        return jsonify({"error": "no_captions", "message": "No captions are available for this video in any language."}), 404
     except (VideoUnavailable, VideoUnplayable):
-        return jsonify({"error": "This video is unavailable (private, deleted, or region-locked)."}), 400
+        return jsonify({"error": "video_unavailable", "message": "This video is unavailable (private, deleted, or region-locked)."}), 400
     except AgeRestricted:
-        return jsonify({"error": "This video is age-restricted, and its captions can't be accessed."}), 400
+        return jsonify({"error": "age_restricted", "message": "This video is age-restricted, and its captions can't be accessed."}), 400
     except InvalidVideoId:
-        return jsonify({"error": "That doesn't look like a valid YouTube video ID."}), 400
+        return jsonify({"error": "invalid_url", "message": "That doesn't look like a valid YouTube video ID."}), 400
     except (RequestBlocked, IpBlocked):
         app.logger.warning(f"YouTube blocked transcript request for {video_id}")
-        return jsonify({"error": "YouTube is temporarily blocking transcript requests from our server. Please try again in a few minutes."}), 503
+        return jsonify({"error": "rate_limited", "message": "YouTube is temporarily blocking transcript requests from our server. Please try again in a few minutes."}), 503
     except Exception as e:
         app.logger.error(f"Transcript fetch failed: {str(e)}", exc_info=True)
-        return jsonify({"error": f"Transcript fetch failed: {str(e)}"}), 500
+        return jsonify({"error": "transcript_fetch_failed", "message": f"Transcript fetch failed: {str(e)}"}), 500
 
     if len(transcript_text.strip()) < 50:
-        return jsonify({"error": "Transcript too short to summarize"}), 400
+        return jsonify({"error": "transcript_too_short", "message": "Transcript too short to summarize"}), 400
 
     if len(transcript_text) > MAX_TRANSCRIPT_CHARS:
         return jsonify({
-            "error": f"This video's transcript is too long to summarize in one request ({len(transcript_text):,} characters, limit {MAX_TRANSCRIPT_CHARS:,}). Try a shorter video or an excerpt."
+            "error": "transcript_too_long",
+            "message": f"This video's transcript is too long to summarize in one request ({len(transcript_text):,} characters, limit {MAX_TRANSCRIPT_CHARS:,}). Try a shorter video or an excerpt."
         }), 413
 
     try:
         app.logger.info("Starting summarization pipeline")
-        summarized_text = summarize_video_pipeline(transcript_text)
+        pipeline_result = summarize_video_pipeline(transcript_text)
         app.logger.info("Summarization completed successfully")
         return jsonify({
-            "summarizedText": summarized_text,
+            "summarizedText": pipeline_result["summary"],
             "transcription": transcript_text,
+            "detectedLanguage": pipeline_result["detectedLanguage"],
+            "wasTranslated": pipeline_result["wasTranslated"],
+            "captionLanguage": source_lang,
             "status": "success"
         })
     except Exception as e:
         app.logger.error(f"Summarization pipeline failed: {str(e)}", exc_info=True)
         return jsonify({
-            "error": f"Summarization failed: {str(e)}",
+            "error": "summarization_failed",
+            "message": f"Summarization failed: {str(e)}",
             "status": "error"
         }), 500
+
 @app.route('/answer-question', methods=['POST'])
 def answer_question():
     try:

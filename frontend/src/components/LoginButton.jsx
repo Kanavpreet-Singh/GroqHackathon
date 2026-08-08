@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { User, LogOut, History } from "lucide-react";
+import { User, LogOut, History as HistoryIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -31,7 +31,7 @@ const LoginButton = () => {
           <Button 
             onClick={handleLogout} 
             variant="outline" 
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 text-foreground"
             title="Log out"
           >
             <LogOut className="h-4 w-4" />
@@ -40,10 +40,10 @@ const LoginButton = () => {
           <Link to="/history">
             <Button
               variant="outline"
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 text-foreground"
               title="View your history"
             >
-              <History className="h-4 w-4" />
+              <HistoryIcon className="h-4 w-4" />
               <span className="hidden md:inline">History</span>
             </Button>
           </Link>
@@ -53,7 +53,7 @@ const LoginButton = () => {
         <Link to="/login">
           <Button 
             variant="outline" 
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 text-foreground"
             title="Log in or sign up"
           >
             <User className="h-4 w-4" />

@@ -18,7 +18,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     setIsDark(!isDark);
   };
 
-  // Apply theme to the document when it changes
   useEffect(() => {
     if (isDark) {
       // Tailwind's `darkMode: ["class"]` looks specifically for a `dark` class —

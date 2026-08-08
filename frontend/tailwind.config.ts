@@ -3,10 +3,8 @@ import type { Config } from "tailwindcss";
 export default {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{ts,tsx,js,jsx}",
-    "./components/**/*.{ts,tsx,js,jsx}",
-    "./app/**/*.{ts,tsx,js,jsx}",
-    "./src/**/*.{ts,tsx,js,jsx}",
+    "./index.html",
+    "./src/**/*.{js,jsx,ts,tsx}",
   ],
   prefix: "",
   theme: {
@@ -52,6 +50,10 @@ export default {
           DEFAULT: 'hsl(var(--accent) / <alpha-value>)',
           foreground: 'hsl(var(--accent-foreground) / <alpha-value>)'
         },
+        verified: {
+          DEFAULT: 'hsl(var(--verified) / <alpha-value>)',
+          foreground: 'hsl(var(--verified-foreground) / <alpha-value>)'
+        },
         popover: {
           DEFAULT: 'hsl(var(--popover) / <alpha-value>)',
           foreground: 'hsl(var(--popover-foreground) / <alpha-value>)'
@@ -71,12 +73,17 @@ export default {
           ring: 'hsl(var(--sidebar-ring) / <alpha-value>)'
         },
         news: {
-          primary: '#9b87f5',
-          secondary: '#7E69AB',
-          accent: '#b8a9fa',
-          dark: '#1A1F2C',
-          light: '#403E43'
+          primary: 'hsl(var(--primary))',
+          secondary: 'hsl(var(--secondary))',
+          accent: 'hsl(var(--accent))',
+          dark: 'hsl(36 70% 42%)',
+          light: 'hsl(var(--muted))'
         }
+      },
+      fontFamily: {
+        display: ['"Newsreader"', 'serif'],
+        mono: ['"Space Mono"', 'monospace'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
       },
       borderRadius: {
         lg: 'var(--radius)',

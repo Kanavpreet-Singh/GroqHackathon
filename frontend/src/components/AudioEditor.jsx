@@ -2,16 +2,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
-import { Mic, Sparkles, Copy, Volume2, Play, Pause, MessageCircle, Send, X, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { Mic, Sparkles, Copy, Volume2, Play, Pause, MessageCircle, Send, X, AlertTriangle, Info, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios"
-import { analyzeAudio } from "@/utils/api";
-import { BASE_URL } from "../helper";
+import { BASE_URL, FLASK_BASE_URL } from "../helper";
+import { WireBadge } from "@/components/ui/wire-badge";
+import ApertureMark from "@/components/ApertureMark";
+
 const AudioEditor = () => {
   const [audioFile, setAudioFile] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [summary, setSummary] = useState("");
+  const [languageInfo, setLanguageInfo] = useState(null);
+  const [analysisError, setAnalysisError] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [question, setQuestion] = useState("");
@@ -33,6 +37,8 @@ const AudioEditor = () => {
 
     // Clear previous analysis
     setSummary("");
+    setLanguageInfo(null);
+    setAnalysisError(null);
     setFakeNewsAnalysis(null);
     setQaHistory([]);
     setIsQaSessionActive(false);
@@ -45,10 +51,10 @@ const AudioEditor = () => {
       const resp = await axios.post(`${BASE_URL}/news/audio`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          token: localStorage.getItem("token"), 
+          token: localStorage.getItem("token"),
         },
       });
-      
+
 
       const response = await axios.post(
         `${BASE_URL}/news/text`,
@@ -69,6 +75,10 @@ const AudioEditor = () => {
 
       if (summaryText) {
         setSummary(summaryText);
+        const detectedLanguage = response.data?.data?.detectedLanguage;
+        if (detectedLanguage && detectedLanguage.toLowerCase() !== "english") {
+          setLanguageInfo(detectedLanguage);
+        }
         toast({
           title: "Analysis complete",
           description: "The text was successfully summarized",
@@ -76,14 +86,12 @@ const AudioEditor = () => {
       } else {
         throw new Error("No summary returned from server");
       }
-  
-      
+
     } catch (error) {
       console.error("Error analyzing audio:", error);
-      toast({
+      setAnalysisError({
         title: "Analysis failed",
-        description: "There was a problem connecting to the backend service",
-        variant: "destructive",
+        description: error.response?.data?.message || "There was a problem processing this audio file. Please try again.",
       });
     } finally {
       setIsAnalyzing(false);
@@ -163,7 +171,7 @@ const AudioEditor = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://groqhackathon.onrender.com/answer-question",
+        `${FLASK_BASE_URL}/answer-question`,
         {
           summary: summary,
           question: question.trim()
@@ -216,7 +224,7 @@ const AudioEditor = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://groqhackathon.onrender.com/detect-fake-news",
+        `${FLASK_BASE_URL}/detect-fake-news`,
         {
           text: summary
         },
@@ -251,30 +259,35 @@ const AudioEditor = () => {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="mb-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Mic className="h-5 w-5 text-news-primary" />
-          <h2 className="text-xl font-semibold text-foreground dark:text-white">Audio Analyzer</h2>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 border border-primary/30 text-primary shrink-0">
+            <Mic className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="font-mono-label text-primary">Input · Audio</div>
+            <h2 className="text-xl font-display font-semibold text-foreground">Audio Analyzer</h2>
+          </div>
         </div>
-        <div className="content-card">
+        <div className="content-card border-t-2 border-t-primary">
           <div className="mb-4">
             <label className="block text-sm font-medium text-foreground mb-1">
-              Upload Audio File
+              Upload an audio file <span className="text-muted-foreground font-normal">(max 25MB)</span>
             </label>
             <div className="flex space-x-2 items-center">
               <Input
                 type="file"
                 accept="audio/*"
                 onChange={handleFileChange}
-                className="flex-1"
+                className="flex-1 bg-background/50 focus-visible:ring-primary"
               />
               <Button
                 onClick={handleAnalyze}
-                className="bg-news-primary hover:bg-news-dark flex items-center gap-2"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
                 disabled={isAnalyzing}
               >
                 {isAnalyzing ? (
                   <>
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    <ApertureMark spinning size={16} />
                     <span>Analyzing...</span>
                   </>
                 ) : (
@@ -289,13 +302,27 @@ const AudioEditor = () => {
         </div>
       </div>
 
+      {analysisError && (
+        <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3 animate-fade-in">
+          <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-destructive">{analysisError.title}</p>
+            <p className="text-sm text-muted-foreground mt-1">{analysisError.description}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleAnalyze} className="flex items-center gap-1 shrink-0">
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Retry</span>
+          </Button>
+        </div>
+      )}
+
       {summary && (
         <>
           <div className="animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">
+                <h2 className="text-xl font-display font-semibold text-foreground">
                   Generated Summary
                 </h2>
               </div>
@@ -313,7 +340,7 @@ const AudioEditor = () => {
                 >
                   {isCheckingFakeNews ? (
                     <>
-                      <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                      <ApertureMark spinning size={16} className="text-primary" />
                       <span>Checking...</span>
                     </>
                   ) : (
@@ -326,7 +353,16 @@ const AudioEditor = () => {
               </div>
             </div>
 
-            <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
+            {languageInfo && (
+              <div className="mb-4">
+                <WireBadge variant="info">
+                  <Info className="h-3 w-3" />
+                  Translated · {languageInfo} → English
+                </WireBadge>
+              </div>
+            )}
+
+            <div className="bg-muted p-6 rounded-xl shadow-md border border-border border-l-4 border-l-primary">
               <div
                 className="prose text-foreground dark:prose-invert max-w-none"
                 dangerouslySetInnerHTML={{ __html: summary }}
@@ -338,31 +374,29 @@ const AudioEditor = () => {
             <div className="mt-8 mb-6">
               <div className="flex items-center space-x-2 mb-4">
                 <AlertTriangle className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Fake News Analysis</h2>
+                <h2 className="text-xl font-display font-semibold text-foreground">Fake News Analysis</h2>
               </div>
               <div className={`bg-muted p-6 rounded-xl shadow-md border ${
-                fakeNewsAnalysis.is_fake ? 'border-red-500' : 'border-green-500'
+                fakeNewsAnalysis.is_fake ? 'border-destructive/40' : 'border-verified/40'
               }`}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">Result:</span>
-                    <span className={`px-3 py-1 rounded-full text-sm ${
-                      fakeNewsAnalysis.is_fake ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                    }`}>
+                    <WireBadge variant={fakeNewsAnalysis.is_fake ? "flagged" : "verified"}>
                       {fakeNewsAnalysis.is_fake ? 'Likely Fake News' : 'Likely Real News'}
-                    </span>
+                    </WireBadge>
                   </div>
                   <div>
                     <span className="font-semibold">Confidence:</span>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                      <div 
+                    <div className="w-full bg-secondary rounded-full h-2.5 mt-2">
+                      <div
                         className={`h-2.5 rounded-full ${
-                          fakeNewsAnalysis.is_fake ? 'bg-red-500' : 'bg-green-500'
-                        }`} 
+                          fakeNewsAnalysis.is_fake ? 'bg-destructive' : 'bg-verified'
+                        }`}
                         style={{ width: `${fakeNewsAnalysis.confidence * 100}%` }}
                       ></div>
                     </div>
-                    <span className="text-sm text-gray-500">{Math.round(fakeNewsAnalysis.confidence * 100)}%</span>
+                    <span className="text-sm text-muted-foreground">{Math.round(fakeNewsAnalysis.confidence * 100)}%</span>
                   </div>
                   <div>
                     <span className="font-semibold">Reasons:</span>
@@ -390,7 +424,7 @@ const AudioEditor = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <MessageCircle className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Interactive Q&A Session</h2>
+                <h2 className="text-xl font-display font-semibold text-foreground">Interactive Q&A Session</h2>
               </div>
               {!isQaSessionActive ? (
                 <Button

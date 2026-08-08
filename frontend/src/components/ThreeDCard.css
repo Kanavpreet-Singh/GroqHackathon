@@ -3,29 +3,34 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 350px; /* Adjust as needed */
+    height: 350px;
     margin-left: 18px;
   }
-  
+
   .card {
-    width: 350px; /* Adjust as needed */
-    height: 350px; /* Adjust as needed */
-    background-color: var(--card-bg);
-    color: var(--text-color);
-    border-radius: 10px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    transition: transform 0.1s ease;
+    width: 300px;
+    height: 350px;
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px hsla(var(--primary), 0.12);
+    transition: transform 0.1s ease, box-shadow 0.3s ease;
     transform-style: preserve-3d;
-    padding: 20px;
+    padding: 24px;
     text-align: center;
     margin-right: 18px;
   }
 
+  .card:hover {
+    box-shadow: 0 16px 40px hsla(var(--primary), 0.22);
+  }
+
   .card h2 {
-    color: var(--heading-color);
+    color: hsl(var(--foreground));
+    font-family: "Newsreader", serif;
   }
-  
+
   .card p {
-    color: var(--text-color);
+    color: hsl(var(--muted-foreground));
   }
-  

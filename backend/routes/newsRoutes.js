@@ -7,7 +7,7 @@ const News = require("../models/news");
 const userAuth = require("../middlewares/authentication/user");
 const path = require("path");
 // Configuration constants
-const FLASK_API_URL = process.env.FLASK_API_URL || 'https://brieflensflask.onrender.com/summarize';
+const FLASK_API_URL = process.env.FLASK_API_URL || 'https://groqhackathon-1.onrender.com/summarize';
 const FLASK_API_TIMEOUT = parseInt(process.env.FLASK_API_TIMEOUT) || 30000; // 30 seconds
 
 router.post("/text", userAuth, async (req, res) => {
@@ -38,23 +38,29 @@ router.post("/text", userAuth, async (req, res) => {
         }
 
         // Call Flask summarization service
-        let summarizedText;
+        let flaskResponse;
         try {
-            const response = await axios.post(
+            flaskResponse = await axios.post(
                 FLASK_API_URL,
                 { originalText: originalText || transcription },
                 { timeout: FLASK_API_TIMEOUT }
             );
 
-            if (!response.data || !response.data.summarizedText) {
+            if (!flaskResponse.data || !flaskResponse.data.summarizedText) {
                 throw new Error('Invalid response format from summarization service');
             }
-            summarizedText = response.data.summarizedText;
         } catch (flaskError) {
-            console.error('Summarization service error:', flaskError);
-            // Fallback to truncated original text if summarization fails
-            summarizedText = (originalText || transcription).substring(0, 500) + '... [Summary failed]';
+            const flaskData = flaskError.response?.data;
+            console.error('Summarization service error:', flaskData || flaskError.message);
+            const upstreamStatus = flaskError.response?.status;
+            return res.status(upstreamStatus && upstreamStatus < 500 ? upstreamStatus : 502).json({
+                success: false,
+                errorCode: flaskData?.error,
+                message: flaskData?.message || "Couldn't summarize this content right now. Please try again."
+            });
         }
+
+        const summarizedText = flaskResponse.data.summarizedText;
 
         // Save to database
         if (inputType === 'audio') {
@@ -80,13 +86,15 @@ router.post("/text", userAuth, async (req, res) => {
                 inputType: newsItem.inputType,
                 status: newsItem.status,
                 summary: newsItem.summarizedText,
+                detectedLanguage: flaskResponse.data.detectedLanguage,
+                wasTranslated: flaskResponse.data.wasTranslated,
                 createdAt: newsItem.createdAt
             }
         });
 
     } catch (err) {
         console.error("Error in news summary endpoint:", err);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             message: "Internal server error",
             error: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -95,7 +103,7 @@ router.post("/text", userAuth, async (req, res) => {
 });
 
 
-const FLASK_VIDEO_API_URL = process.env.FLASK_VIDEO_API_URL || 'https://brieflensflask.onrender.com/summarize-video';
+const FLASK_VIDEO_API_URL = process.env.FLASK_VIDEO_API_URL || 'https://groqhackathon-1.onrender.com/summarize-video';
 // Video summarization involves fetching a transcript plus several LLM calls (more for
 // longer videos, via map-reduce), which routinely takes well past 30s — and longer
 // still on a cold-started free-tier dyno. Tune via env if the hosting platform allows
@@ -139,9 +147,11 @@ router.post("/video", userAuth, async (req, res) => {
                 { videoUrl },
                 { timeout: FLASK_VIDEO_API_TIMEOUT }
             );
-        } catch (flaskError) {
-            console.error("Flask video summarization error:", flaskError.message);
 
+            if (!flaskResponse.data || !flaskResponse.data.summarizedText) {
+                throw new Error("Invalid response format from summarization service");
+            }
+        } catch (flaskError) {
             if (flaskError.code === 'ECONNABORTED') {
                 return res.status(504).json({
                     success: false,
@@ -149,27 +159,13 @@ router.post("/video", userAuth, async (req, res) => {
                 });
             }
 
-            if (flaskError.response) {
-                // Forward the specific reason the Flask service gave (invalid URL,
-                // no captions available, video unavailable, rate-limited, etc.)
-                const upstreamStatus = flaskError.response.status;
-                const message = flaskError.response.data?.error || "Failed to summarize video";
-                return res.status(upstreamStatus >= 400 && upstreamStatus < 500 ? upstreamStatus : 502).json({
-                    success: false,
-                    message
-                });
-            }
-
-            return res.status(503).json({
+            const flaskData = flaskError.response?.data;
+            console.error("Flask video summarization error:", flaskData || flaskError.message);
+            const upstreamStatus = flaskError.response?.status;
+            return res.status(upstreamStatus && upstreamStatus < 500 ? upstreamStatus : 502).json({
                 success: false,
-                message: "The video summarization service is currently unavailable. Please try again later."
-            });
-        }
-
-        if (!flaskResponse.data || !flaskResponse.data.summarizedText) {
-            return res.status(502).json({
-                success: false,
-                message: "Received an invalid response from the summarization service"
+                errorCode: flaskData?.error,
+                message: flaskData?.message || "Couldn't summarize this video right now. Please try again."
             });
         }
 
@@ -178,6 +174,7 @@ router.post("/video", userAuth, async (req, res) => {
 
         // Only persist a record once we actually have a successful summary —
         // a failed attempt has nothing useful to store and shouldn't clutter history.
+
         const newsItem = new News({
             userId,
             inputType,
@@ -198,6 +195,9 @@ router.post("/video", userAuth, async (req, res) => {
                 inputType: newsItem.inputType,
                 status: newsItem.status,
                 summary: newsItem.summarizedText,
+                detectedLanguage: flaskResponse.data.detectedLanguage,
+                wasTranslated: flaskResponse.data.wasTranslated,
+                captionLanguage: flaskResponse.data.captionLanguage,
                 createdAt: newsItem.createdAt
             }
         });
@@ -211,17 +211,17 @@ router.post("/video", userAuth, async (req, res) => {
         });
     }
 });
-const { AssemblyAI } = require('assemblyai');
 const fs = require('fs');
 const multer=require("multer")
+const FormData = require('form-data');
 
-// Initialize AssemblyAI client
-const client = new AssemblyAI({
-  apiKey: process.env.ASSEMBLYAI_API_KEY || '6491c189bb4b4f9fb9aa8ac8f340ab62'
-});
+if (!process.env.GROQ_API_KEY) {
+  throw new Error('GROQ_API_KEY environment variable is required');
+}
+const GROQ_TRANSCRIPTION_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
 
 /**
- * Transcribes audio file using AssemblyAI SDK
+ * Transcribes audio file using Groq's Whisper API
  * @param {string} filePath - Path to audio file
  * @param {number} maxRetries - Maximum retry attempts
  * @param {number} initialDelay - Initial retry delay in ms
@@ -234,22 +234,22 @@ const transcribeAudio = async (filePath, maxRetries = 3, initialDelay = 1000) =>
 
   while (retryCount < maxRetries) {
     try {
-      const params = {
-        audio: filePath
-      };
+      const form = new FormData();
+      form.append('file', fs.createReadStream(filePath));
+      form.append('model', 'whisper-large-v3-turbo');
 
-      const transcript = await client.transcripts.transcribe(params);
+      const response = await axios.post(GROQ_TRANSCRIPTION_URL, form, {
+        headers: {
+          ...form.getHeaders(),
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+      });
 
-      if (transcript.status === 'error') {
-        throw new Error(transcript.error);
+      if (!response.data?.text) {
+        throw new Error('Transcription completed but no text returned');
       }
 
-      // Poll for completion if not already done
-      if (transcript.status !== 'completed') {
-        return await pollTranscriptStatus(transcript.id);
-      }
-
-      return transcript.text;
+      return response.data.text;
     } catch (error) {
       lastError = error;
       retryCount++;
@@ -269,35 +269,6 @@ const transcribeAudio = async (filePath, maxRetries = 3, initialDelay = 1000) =>
     }
   }
   throw lastError || new Error('Transcription failed after retries');
-};
-
-/**
- * Polls transcript status until completion
- * @param {string} transcriptId - Transcript ID
- * @returns {Promise<string>} - Completed transcription text
- */
-const pollTranscriptStatus = async (transcriptId) => {
-  const maxPollingAttempts = 60; // 5 minutes max (60 attempts * 5 seconds)
-  
-  for (let attempt = 1; attempt <= maxPollingAttempts; attempt++) {
-    const transcript = await client.transcripts.get(transcriptId);
-
-    if (transcript.status === 'completed') {
-      if (!transcript.text) {
-        throw new Error('Transcription completed but no text returned');
-      }
-      return transcript.text;
-      
-    }
-
-    if (transcript.status === 'error') {
-      throw new Error(transcript.error || 'Transcription failed');
-    }
-
-    await sleep(5000); // Wait 5 seconds between checks
-  }
-
-  throw new Error('Transcription timeout - took too long to complete');
 };
 
 // Helper function

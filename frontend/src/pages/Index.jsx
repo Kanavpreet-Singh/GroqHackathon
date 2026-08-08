@@ -4,9 +4,7 @@ import TextEditor from "@/components/TextEditor";
 import VideoEditor from "@/components/VideoEditor";
 import AudioEditor from "@/components/AudioEditor";
 import { useTheme } from "@/context/ThemeContext";
-import { ColourfulText } from "@/components/ui/colourful-text";
 import Footer from "@/components/Footer";
-import { GoogleTranslateWidget } from "../components/GoogleTranslateWidget";
 import HomePage from "./HomePage.jsx";
 
 const Index = () => {
@@ -17,11 +15,7 @@ const Index = () => {
   const { isDark } = useTheme();
 
   return (
-    <>
-      <div className="hidden md:block fixed top-4 right-4 z-50 bg-background shadow-md rounded-md p-2">
-      </div>
-
-      <div className={`min-h-screen flex flex-col bg-background ${isDark ? 'dark-theme' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-background ${isDark ? 'dark-theme' : ''}`}>
         <Header
           selectedMedia={selectedMedia}
           setSelectedMedia={setSelectedMedia}
@@ -59,15 +53,8 @@ const Index = () => {
           </main>
         )}
 
-        <footer className="border-t border-border mt-auto">
-          <div className="container mx-auto px-4 py-6">
-            <p className="text-muted-foreground text-center text-sm">
-              © 2025 BriefLens • HackCity Boys
-            </p>
-          </div>
-        </footer>
-      </div>
-    </>
+      <Footer />
+    </div>
   );
 };
 

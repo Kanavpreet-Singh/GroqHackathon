@@ -32,27 +32,27 @@ const Header = ({ selectedMedia, setSelectedMedia }) => {
   };
 
   return (
-    <header className="relative z-10 bg-card border-b border-border shadow-sm">
+    <header className="relative z-10 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div 
-              className="flex items-center gap-2 cursor-pointer" 
+            <div
+              className="flex items-center gap-2 cursor-pointer"
               onClick={handleLogoClick}
             >
-              <div className="bg-news-primary p-2">
+              <div className="bg-primary rounded-lg p-2">
                 <img
                   src="/myLogo.png"
                   alt="Logo"
                   className="h-8 w-8 object-contain"
                 />
               </div>
-              <h1 className="text-xl font-bold text-foreground hidden sm:block">
+              <h1 className="text-xl font-display italic font-semibold text-foreground hidden sm:block">
                 BriefLens
               </h1>
             </div>
-            <h1 
-              className="text-xl font-bold text-foreground sm:hidden cursor-pointer"
+            <h1
+              className="text-xl font-display italic font-semibold text-foreground sm:hidden cursor-pointer"
               onClick={handleLogoClick}
             >
               BriefLens

@@ -13,7 +13,6 @@ require('dotenv').config();
     } catch (err) {
         return res.status(401).json({ success: false, message:"Your session is invalid or has expired. Please sign in again." })
     }
-
 }
 
 module.exports=userAuth
